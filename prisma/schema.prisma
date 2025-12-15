@@ -1,0 +1,324 @@
+// =======================================
+// Prisma Generator & Datasource
+// =======================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+    url      = env("DATABASE_URL")
+
+
+}
+
+// =======================================
+// ENUMS
+// =======================================
+
+enum UserRole {
+  ADMIN
+  HOD
+  FACULTY
+  STUDENT
+}
+
+enum ProgramType {
+  LEVEL
+  DEGREE
+}
+
+enum AcademicLevel {
+  UG
+  PG
+  DIPLOMA
+  CERTIFICATE
+}
+
+enum CourseType {
+  THEORY
+  PRACTICAL
+  BOTH
+}
+
+enum BloomLevel {
+  REMEMBER
+  UNDERSTAND
+  APPLY
+  ANALYZE
+  EVALUATE
+  CREATE
+}
+
+// =======================================
+// USER
+// =======================================
+
+model User {
+  id       String   @id @default(cuid())
+  email    String   @unique
+  password String
+  name     String
+  role     UserRole
+
+  // User belongs to a department
+  departmentId String?
+  department   Department? @relation("UserDepartment", fields: [departmentId], references: [id])
+
+  // User is HOD of departments
+  hodDepartments Department[] @relation("HODRelation")
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // HOD responsibilities
+  createdCourses Course[]
+  createdCLOs    CLO[]
+
+  @@map("users")
+}
+
+// =======================================
+// PROGRAM
+// =======================================
+
+model Program {
+  id   String  @id @default(cuid())
+  name String
+  code String?
+  slug String  @unique
+
+  type  ProgramType
+  level AcademicLevel?
+
+  duration    Int?
+  description String?
+
+  parentId String?
+  parent   Program?  @relation("ProgramHierarchy", fields: [parentId], references: [id])
+  children Program[] @relation("ProgramHierarchy")
+
+  departments Department[]
+  pos         PO[]
+  psos        PSO[]
+
+  order     Int       @default(0)
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, parentId])
+  @@index([parentId])
+  @@map("programs")
+}
+
+// =======================================
+// DEPARTMENT
+// =======================================
+
+model Department {
+  id   String  @id @default(cuid())
+  name String
+  code String?
+  slug String  @unique
+
+  programId String
+  program   Program @relation(fields: [programId], references: [id])
+
+  // HOD of department
+  hodId String?
+  hod   User?   @relation("HODRelation", fields: [hodId], references: [id])
+
+  // Users belonging to department
+  users User[] @relation("UserDepartment")
+
+  courses Course[]
+
+  description String?
+  order       Int     @default(0)
+
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, programId])
+  @@index([programId])
+  @@index([hodId])
+  @@map("departments")
+}
+
+// =======================================
+// COURSE
+// =======================================
+
+model Course {
+  id   String @id @default(cuid())
+  name String
+  code String
+  slug String @unique
+
+  semester Int
+  credits  Int?
+  type     CourseType
+
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  regulation  String?
+  description String?
+
+  clos CLO[]
+
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([code, departmentId, semester])
+  @@index([departmentId])
+  @@index([semester])
+  @@map("courses")
+}
+
+// =======================================
+// CLO
+// =======================================
+
+model CLO {
+  id        String @id @default(cuid())
+  code      String
+  statement String
+
+  bloomLevel          BloomLevel
+  attainmentThreshold Float      @default(50.0)
+
+  order Int @default(0)
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id])
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  version String?
+
+  poMappings  CLOPOMapping[]
+  psoMappings CLOPSOMapping[]
+
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([code, courseId])
+  @@index([courseId])
+  @@map("clos")
+}
+
+// =======================================
+// PO
+// =======================================
+
+model PO {
+  id        String @id @default(cuid())
+  code      String
+  statement String
+
+  programId String
+  program   Program @relation(fields: [programId], references: [id])
+
+  order Int @default(0)
+
+  mappings CLOPOMapping[]
+
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([code, programId])
+  @@index([programId])
+  @@map("pos")
+}
+
+// =======================================
+// PSO
+// =======================================
+
+model PSO {
+  id        String @id @default(cuid())
+  code      String
+  statement String
+
+  programId String
+  program   Program @relation(fields: [programId], references: [id])
+
+  order Int @default(0)
+
+  mappings CLOPSOMapping[]
+
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([code, programId])
+  @@index([programId])
+  @@map("psos")
+}
+
+// =======================================
+// CLO → PO MAPPING
+// =======================================
+
+model CLOPOMapping {
+  id String @id @default(cuid())
+
+  cloId String
+  poId  String
+
+  clo CLO @relation(fields: [cloId], references: [id])
+  po  PO  @relation(fields: [poId], references: [id])
+
+  level Int // 0–3
+
+  @@unique([cloId, poId])
+  @@index([cloId])
+  @@index([poId])
+  @@map("clo_po_mappings")
+}
+
+// =======================================
+// CLO → PSO MAPPING
+// =======================================
+
+model CLOPSOMapping {
+  id String @id @default(cuid())
+
+  cloId String
+  psoId String
+
+  clo CLO @relation(fields: [cloId], references: [id])
+  pso PSO @relation(fields: [psoId], references: [id])
+
+  level Int // 0–3
+
+  @@unique([cloId, psoId])
+  @@index([cloId])
+  @@index([psoId])
+  @@map("clo_pso_mappings")
+}
