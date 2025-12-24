@@ -8,9 +8,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-    url      = env("DATABASE_URL")
-
-
+  url      = env("DATABASE_URL")
 }
 
 // =======================================
@@ -62,11 +60,9 @@ model User {
   name     String
   role     UserRole
 
-  // User belongs to a department
   departmentId String?
   department   Department? @relation("UserDepartment", fields: [departmentId], references: [id])
 
-  // User is HOD of departments
   hodDepartments Department[] @relation("HODRelation")
 
   isActive Boolean @default(true)
@@ -74,9 +70,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // HOD responsibilities
   createdCourses Course[]
-  createdCLOs    CLO[]
+  createdClos    Clo[]
 
   @@map("users")
 }
@@ -86,10 +81,10 @@ model User {
 // =======================================
 
 model Program {
-  id   String  @id @default(cuid())
+  id   String @id @default(cuid())
   name String
   code String?
-  slug String  @unique
+  slug String @unique
 
   type  ProgramType
   level AcademicLevel?
@@ -102,8 +97,8 @@ model Program {
   children Program[] @relation("ProgramHierarchy")
 
   departments Department[]
-  pos         PO[]
-  psos        PSO[]
+  pos         Po[]
+  psos        Pso[]
 
   order     Int       @default(0)
   isActive  Boolean   @default(true)
@@ -122,25 +117,22 @@ model Program {
 // =======================================
 
 model Department {
-  id   String  @id @default(cuid())
+  id   String @id @default(cuid())
   name String
   code String?
-  slug String  @unique
+  slug String @unique
 
   programId String
   program   Program @relation(fields: [programId], references: [id])
 
-  // HOD of department
   hodId String?
-  hod   User?   @relation("HODRelation", fields: [hodId], references: [id])
+  hod   User? @relation("HODRelation", fields: [hodId], references: [id])
 
-  // Users belonging to department
-  users User[] @relation("UserDepartment")
-
+  users   User[]   @relation("UserDepartment")
   courses Course[]
 
   description String?
-  order       Int     @default(0)
+  order       Int @default(0)
 
   isActive  Boolean   @default(true)
   deletedAt DateTime?
@@ -172,12 +164,12 @@ model Course {
   department   Department @relation(fields: [departmentId], references: [id])
 
   createdById String
-  createdBy   User   @relation(fields: [createdById], references: [id])
+  createdBy   User @relation(fields: [createdById], references: [id])
 
   regulation  String?
   description String?
 
-  clos CLO[]
+  clos Clo[]
 
   isActive  Boolean   @default(true)
   deletedAt DateTime?
@@ -195,13 +187,13 @@ model Course {
 // CLO
 // =======================================
 
-model CLO {
+model Clo {
   id        String @id @default(cuid())
   code      String
   statement String
 
   bloomLevel          BloomLevel
-  attainmentThreshold Float      @default(50.0)
+  attainmentThreshold Float @default(50.0)
 
   order Int @default(0)
 
@@ -209,12 +201,12 @@ model CLO {
   course   Course @relation(fields: [courseId], references: [id])
 
   createdById String
-  createdBy   User   @relation(fields: [createdById], references: [id])
+  createdBy   User @relation(fields: [createdById], references: [id])
 
   version String?
 
-  poMappings  CLOPOMapping[]
-  psoMappings CLOPSOMapping[]
+  poMappings  CloPoMapping[]
+  psoMappings CloPsoMapping[]
 
   isActive  Boolean   @default(true)
   deletedAt DateTime?
@@ -231,7 +223,7 @@ model CLO {
 // PO
 // =======================================
 
-model PO {
+model Po {
   id        String @id @default(cuid())
   code      String
   statement String
@@ -241,7 +233,7 @@ model PO {
 
   order Int @default(0)
 
-  mappings CLOPOMapping[]
+  mappings CloPoMapping[]
 
   isActive  Boolean   @default(true)
   deletedAt DateTime?
@@ -258,7 +250,7 @@ model PO {
 // PSO
 // =======================================
 
-model PSO {
+model Pso {
   id        String @id @default(cuid())
   code      String
   statement String
@@ -268,7 +260,7 @@ model PSO {
 
   order Int @default(0)
 
-  mappings CLOPSOMapping[]
+  mappings CloPsoMapping[]
 
   isActive  Boolean   @default(true)
   deletedAt DateTime?
@@ -285,16 +277,16 @@ model PSO {
 // CLO → PO MAPPING
 // =======================================
 
-model CLOPOMapping {
+model CloPoMapping {
   id String @id @default(cuid())
 
   cloId String
   poId  String
 
-  clo CLO @relation(fields: [cloId], references: [id])
-  po  PO  @relation(fields: [poId], references: [id])
+  clo Clo @relation(fields: [cloId], references: [id])
+  po  Po  @relation(fields: [poId], references: [id])
 
-  level Int // 0–3
+  level Int
 
   @@unique([cloId, poId])
   @@index([cloId])
@@ -306,16 +298,16 @@ model CLOPOMapping {
 // CLO → PSO MAPPING
 // =======================================
 
-model CLOPSOMapping {
+model CloPsoMapping {
   id String @id @default(cuid())
 
   cloId String
   psoId String
 
-  clo CLO @relation(fields: [cloId], references: [id])
-  pso PSO @relation(fields: [psoId], references: [id])
+  clo Clo @relation(fields: [cloId], references: [id])
+  pso Pso @relation(fields: [psoId], references: [id])
 
-  level Int // 0–3
+  level Int
 
   @@unique([cloId, psoId])
   @@index([cloId])

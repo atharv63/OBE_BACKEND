@@ -6,6 +6,7 @@
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "aws-ssl-profiles": "^1.1.2",
+    "bcryptjs": "^3.0.3",
     "c12": "^3.1.0",
     "chevrotain": "^10.5.0",
     "chokidar": "^4.0.3",
@@ -37,6 +38,7 @@
     "is-property": "^1.0.2",
     "isexe": "^2.0.0",
     "jiti": "^2.6.1",
+    "jsonwebtoken": "^9.0.3",
     "lilconfig": "^2.1.0",
     "lodash": "^4.17.21",
     "long": "^5.3.2",
@@ -79,10 +81,16 @@
     "seed": "node prisma/seed.js"
   },
   "scripts": {
+    "start": "node src/services/app.js",
+    "dev": "nodemon src/services/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "type": "commonjs",
+  "devDependencies": {
+    "eslint": "^9.39.2",
+    "nodemon": "^3.1.11"
+  }
 }
