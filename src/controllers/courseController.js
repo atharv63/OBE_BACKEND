@@ -1,23 +1,57 @@
 // backend/src/controllers/courseController.js
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 const createCourse = async (req, res) => {
   try {
-    const { code, name, description, credits, category, version, threshold } = req.body;
-    
+    // Accept fields: code, name, slug, semester, credits, programid (mapped to departmentId), type, category, description, isActive
+    const {
+      code,
+      name,
+      slug,
+      semester,
+      credits,
+      programid,
+      departmentId: bodyDepartmentId,
+      type,
+      category,
+      description,
+      isActive,
+    } = req.body;
+
+    // Determine departmentId: prefer explicit departmentId, then programid, then user's department
+    const departmentId = bodyDepartmentId || programid || req.user.departmentId;
+
+    if (!code || !name) {
+      return res.status(400).json({ error: "code and name are required" });
+    }
+
+    // Simple slug generation if not provided
+    const makeSlug = (text) =>
+      text
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9 -]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-");
+
+    const finalSlug = slug || makeSlug(name);
+
     const course = await prisma.course.create({
       data: {
         code,
         name,
-        description,
-        credits: parseInt(credits),
+        slug: finalSlug,
+        semester: semester ? parseInt(semester) : 0,
+        credits: credits ? parseInt(credits) : null,
+        type,
         category,
-        version,
-        threshold: parseFloat(threshold),
-        departmentId: req.user.departmentId,
-        createdById: req.user.id
-      }
+        description,
+        isActive: typeof isActive === "boolean" ? isActive : true,
+        departmentId,
+        createdById: req.user.id,
+      },
     });
 
     res.status(201).json(course);
@@ -29,19 +63,19 @@ const createCourse = async (req, res) => {
 const getCourses = async (req, res) => {
   try {
     const courses = await prisma.course.findMany({
-      where: { 
+      where: {
         departmentId: req.user.departmentId,
-        isActive: true 
+        isActive: true,
       },
       include: {
         createdBy: { select: { name: true } },
         clos: { where: { isActive: true } },
         assignments: {
           include: {
-            faculty: { select: { name: true } }
-          }
-        }
-      }
+            faculty: { select: { name: true } },
+          },
+        },
+      },
     });
 
     res.json(courses);
@@ -57,7 +91,7 @@ const updateCourse = async (req, res) => {
 
     const course = await prisma.course.update({
       where: { id },
-      data: updates
+      data: updates,
     });
 
     res.json(course);
@@ -72,10 +106,10 @@ const deleteCourse = async (req, res) => {
 
     await prisma.course.update({
       where: { id },
-      data: { isActive: false }
+      data: { isActive: false },
     });
 
-    res.json({ message: 'Course deactivated successfully' });
+    res.json({ message: "Course deactivated successfully" });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
