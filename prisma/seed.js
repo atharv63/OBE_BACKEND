@@ -117,9 +117,46 @@ async function main() {
       description: "Test course for API development",
     },
   });
+  // ===============================
+  // PROGRAM OUTCOMES (POs)
+  // ===============================
+  console.log("🎯 Seeding POs...");
+  const poData = [
+    { code: "PO1", statement: "Engineering Knowledge: Apply knowledge of mathematics and science.", order: 1 },
+    { code: "PO2", statement: "Problem Analysis: Identify and analyze complex problems.", order: 2 },
+    { code: "PO3", statement: "Design/Development: Design solutions for complex problems.", order: 3 },
+    { code: "PO4", statement: "Conduct Investigations: Use research-based knowledge.", order: 4 },
+    { code: "PO5", statement: "Modern Tool Usage: Create and apply appropriate techniques.", order: 5 },
+  ];
+
+  for (const po of poData) {
+    await prisma.po.upsert({
+      where: { code_programId: { code: po.code, programId: bsc.id } },
+      update: {},
+      create: { ...po, programId: bsc.id },
+    });
+  }
+
+  // ===============================
+  // PROGRAM SPECIFIC OUTCOMES (PSOs)
+  // ===============================
+  console.log("🎯 Seeding PSOs...");
+  const psoData = [
+    { code: "PSO1", statement: "Analyze and build computer-based systems.", order: 1 },
+    { code: "PSO2", statement: "Apply software engineering principles.", order: 2 },
+  ];
+
+  for (const pso of psoData) {
+    await prisma.pso.upsert({
+      where: { code_programId: { code: pso.code, programId: bsc.id } },
+      update: {},
+      create: { ...pso, programId: bsc.id },
+    });
+  }
 
   console.log("✅ Seeding completed successfully");
 }
+
 
 main()
   .catch((error) => {

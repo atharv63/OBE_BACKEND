@@ -32,7 +32,7 @@ router.get("/program/:programmeId/auto-code", authenticate, getAutoCode);
 router.post("/course", authenticate, createCourse);
 
 //Create CLO for a course
-router.post("/createClo/:courseId", authenticate, createClo);
+router.post("/clo/createClo/:courseId", authenticate, createClo);
 
 //Get CLOs by course
 router.get("/course/:courseId/clos", authenticate, getClosByCourse);
