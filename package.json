@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "@mui/icons-material": "^7.3.6",
     "@prisma/client": "^5.22.0",
     "aws-ssl-profiles": "^1.1.2",
     "bcryptjs": "^3.0.3",
@@ -59,6 +60,7 @@
     "rc9": "^2.1.2",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "react-toastify": "^11.0.5",
     "readdirp": "^4.1.2",
     "regexp-to-ast": "^0.5.0",
     "remeda": "^2.21.3",

@@ -76,10 +76,12 @@ model User {
   isActive Boolean @default(true)
 
   createdAt DateTime @default(now())
+  
   updatedAt DateTime @updatedAt
 
   createdCourses Course[]
   createdClos    Clo[]
+   faculty Faculty?
 
   @@map("users")
 }
@@ -141,6 +143,8 @@ model Department {
 
   description String?
   order       Int @default(0)
+  // Faculties in this department
+  faculties Faculty[]
 
   isActive  Boolean   @default(true)
   deletedAt DateTime?
@@ -174,7 +178,8 @@ model Course {
 
   createdById String
   createdBy   User @relation(fields: [createdById], references: [id])
-
+  // Faculty assignments for this course
+  facultyAssignments CourseFaculty[]
   regulation  String?
   description String?
 
@@ -322,4 +327,63 @@ model CloPsoMapping {
   @@index([cloId])
   @@index([psoId])
   @@map("clo_pso_mappings")
+}
+
+// =======================================
+// FACULTY
+// =======================================
+
+model Faculty {
+  id              String  @id @default(cuid())
+  name            String
+  designation     String?
+  qualifications  String?
+
+  // Faculty belongs to a department
+  departmentId    String
+  department      Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  // Link to User account for authentication
+  userId          String?
+  user            User?      @relation(fields: [userId], references: [id])
+
+  // Faculty can be assigned to multiple courses
+  courseAssignments CourseFaculty[]
+
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId])
+  @@index([departmentId])
+  @@index([userId])
+  @@map("faculties")
+}
+
+// =======================================
+// COURSE-FACULTY ASSIGNMENT
+// =======================================
+model CourseFaculty {
+  courseId            String
+  facultyId           String
+  semester            Int
+  year                Int     // Academic year e.g., 2024
+  
+  teachingMethodology String?
+  assessmentMode      String?
+  
+  course              Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  faculty             Faculty @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([courseId, facultyId, semester, year])
+  @@index([courseId])
+  @@index([facultyId])
+  @@index([semester])
+  @@index([year])
+  @@map("course_faculties")
 }
