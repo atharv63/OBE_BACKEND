@@ -10,11 +10,20 @@ const {
   getClosByCourse,
   getPosPsosByProgram,
   mapClosToPosPsos,
+  getDepartmentFaculties,
+  getAvailableFacultiesForCourse,
+  getCourseAssignments,
+  assignFacultyToCourse,
+  updateAssignment,
+  removeFacultyAssignment,
+  getFacultyWorkload
+, getAllDepartmentAssignments, getAssignmentsStats
 } = require("../controllers/hodController");
 
 const { authenticate } = require("../middleware/auth");
 
 const router = express.Router();
+console.log("HOD routes loaded");
 
 // HOD Dashboard statistics
 router.get("/dashboard/stats", authenticate, getDashboardStats);
@@ -42,5 +51,31 @@ router.get("/course/:courseId/po-pso", authenticate, getPosPsosByProgram);
 
 //Map CLOs to POs and PSOs
 router.post("/course/:courseId/map-clos", authenticate, mapClosToPosPsos);
+
+// Get all faculties in department
+router.get("/faculties", authenticate, getDepartmentFaculties);
+
+// Get available faculties for a course
+router.get("/courses/:courseId/available-faculties", authenticate, getAvailableFacultiesForCourse);
+
+// Get course assignments
+console.log("Registering route for getting course assignments");
+router.get("/courses/:courseId/assignments", authenticate, getCourseAssignments);
+
+// Assign faculty to course
+router.post("/courses/:courseId/assign", authenticate, assignFacultyToCourse);
+
+// Update assignment
+router.put("/courses/:courseId/assignments/:facultyId/:semester/:year", authenticate, updateAssignment);
+
+// Remove assignment
+router.delete("/courses/:courseId/assignments/:facultyId/:semester/:year", authenticate, removeFacultyAssignment);
+
+// Get faculty workload
+router.get("/faculties/:facultyId/workload", authenticate, getFacultyWorkload);
+// router.get("/courses/:courseId", authenticate, getCourseById);
+router.get('/assignments', authenticate,  getAllDepartmentAssignments);
+router.get('/assignments/stats', authenticate, getAssignmentsStats);
+
 
 module.exports = router;

@@ -8,7 +8,9 @@ const authRoutes = require("../routes/auth");
 const courseRoutes = require("../routes/courses");
 const cloRoutes = require("../routes/clos");
 const hodRoutes = require("../routes/hodroutes");
-// Import other routes...
+// const facultyAssignmentRoutes = require('../routes/facultyAssignmentRoutes');
+// const facultyRoutes = require('./routes/facultyRoutes');
+
 
 const prisma = new PrismaClient();
 const app = express();
@@ -16,8 +18,16 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use((err, req, res, next) => {
+  console.error("🔥 ERROR:", err);
+  console.error("🔥 Error stack:", err.stack);
+  res.status(500).json({ 
+    error: "Internal server error",
+    message: err.message 
+  });
+});
 app.use((req, res, next) => {
-  console.log(req.method, req.url);
+ console.log(`${req.method} ${req.path} - Body:`, req.body || 'N/A');
   next();
 });
 
@@ -25,8 +35,11 @@ app.use((req, res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/clos", cloRoutes);
+console.log("Registering HOD routes");
 app.use("/api/hod", hodRoutes);
-// Use other routes...
+// app.use('/api/assignments', facultyAssignmentRoutes);
+// app.use('/api/faculty', facultyRoutes);
+
 
 const PORT = process.env.PORT || 5000;
 
