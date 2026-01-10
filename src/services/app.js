@@ -9,7 +9,7 @@ const courseRoutes = require("../routes/courses");
 const cloRoutes = require("../routes/clos");
 const hodRoutes = require("../routes/hodroutes");
 // const facultyAssignmentRoutes = require('../routes/facultyAssignmentRoutes');
-// const facultyRoutes = require('./routes/facultyRoutes');
+const facultyRoutes = require('../routes/facultyRoutes');
 
 
 const prisma = new PrismaClient();
@@ -38,7 +38,7 @@ app.use("/api/clos", cloRoutes);
 console.log("Registering HOD routes");
 app.use("/api/hod", hodRoutes);
 // app.use('/api/assignments', facultyAssignmentRoutes);
-// app.use('/api/faculty', facultyRoutes);
+app.use('/api/faculty', facultyRoutes);
 
 
 const PORT = process.env.PORT || 5000;
