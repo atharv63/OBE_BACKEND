@@ -1,15 +1,34 @@
-// // backend/src/routes/facultyRoutes.js
-// const express = require("express");
-// const { 
-//   getFacultyProfile, 
-//   getCurrentAssignments 
-// } = require("../controllers/facultyController");
-// const { authenticate } = require("../middleware/auth");
+const express = require("express");
+const {
+  getFacultyProfile,
+  getCurrentAssignments,
+  getDashboardStats,
+  getAllAssignments,
+  getDepartmentInfo,
+  getCourseDetails
+} = require("../controllers/facultyController");
 
-// const router = express.Router();
+const { authenticate } = require("../middleware/auth");
 
-// router.use(authenticate);
-// router.get("/profile", getFacultyProfile);
-// router.get("/assignments/current", getCurrentAssignments);
+const router = express.Router();
+console.log("Faculty routes loaded");
 
-// module.exports = router;
+// Faculty Dashboard statistics
+router.get("/dashboard/stats", authenticate, getDashboardStats);
+
+// Get faculty profile
+router.get("/profile", authenticate, getFacultyProfile);
+
+// Get current semester assignments
+router.get("/assignments/current", authenticate, getCurrentAssignments);
+
+// Get all assignments (historical)
+router.get("/assignments", authenticate, getAllAssignments);
+
+// Get department info
+router.get("/department", authenticate, getDepartmentInfo);
+
+// Get course details with CLOs
+router.get("/courses/:courseId", authenticate, getCourseDetails);
+
+module.exports = router;
