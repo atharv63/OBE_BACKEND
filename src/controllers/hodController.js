@@ -641,6 +641,31 @@ module.exports.mapClosToPosPsos = async (req, res) => {
     res.status(500).json({ error: "Error saving mappings" });
   }
 };
+
+//Get mappings for a Course
+module.exports.getMappings = async (req, res) => {
+  const { courseId } = req.params;
+  try {
+    // Get all CLOs for the course
+    const clos = await prisma.clo.findMany({
+      where: { courseId },
+    });
+    const cloIds = clos.map((clo) => clo.id);
+    // Get CLO-PO mappings
+    const cloPoMappings = await prisma.cloPoMapping.findMany({
+      where: { cloId: { in: cloIds } },
+    });
+    // Get CLO-PSO mappings
+    const cloPsoMappings = await prisma.cloPsoMapping.findMany({
+      where: { cloId: { in: cloIds } },
+    });
+    res.json({ cloPoMappings, cloPsoMappings });
+  } catch (error) {
+    console.error("getMappings error:", error);
+    res.status(500).json({ error: "Error fetching mappings" });
+  }
+};
+
 // Get all faculties in the department
 module.exports.getDepartmentFaculties = async (req, res) => {
   try {
