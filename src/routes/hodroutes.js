@@ -14,6 +14,7 @@ const {
   updateClo,
   getPosPsosByProgram,
   mapClosToPosPsos,
+  getMappings,
   getDepartmentFaculties,
   getAvailableFacultiesForCourse,
   getCourseAssignments,
@@ -68,6 +69,9 @@ router.get("/course/:courseId/po-pso", authenticate, getPosPsosByProgram);
 
 //Map CLOs to POs and PSOs
 router.post("/course/:courseId/map-clos", authenticate, mapClosToPosPsos);
+
+//Get mappings for a course
+router.get("/course/:courseId/map-clos", authenticate, getMappings);
 
 // Get all faculties in department
 router.get("/faculties", authenticate, getDepartmentFaculties);
