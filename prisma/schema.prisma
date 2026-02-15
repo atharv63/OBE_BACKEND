@@ -57,6 +57,32 @@ enum BloomLevel {
   CREATE
 }
 
+enum AssessmentType {
+  CONTINUOUS
+  MID_TERM
+  SEMESTER_END
+  PRACTICAL
+  OTHER
+}
+
+enum AssessmentMode {
+  WRITTEN
+  PRESENTATION
+  ASSIGNMENT
+  PROJECT
+  LAB
+  QUIZ
+  MCQ
+  VIVA
+}
+
+enum EnrollmentStatus {
+  ENROLLED
+  COMPLETED
+  DROPPED
+  FAILED
+}
+
 // =======================================
 // USER
 // =======================================
@@ -76,12 +102,15 @@ model User {
   isActive Boolean @default(true)
 
   createdAt DateTime @default(now())
-  
   updatedAt DateTime @updatedAt
 
   createdCourses Course[]
   createdClos    Clo[]
-   faculty Faculty?
+  
+  faculty    Faculty?
+  student    Student?
+  
+  enteredMarks Mark[] @relation("MarkEnterer")
 
   @@map("users")
 }
@@ -109,6 +138,8 @@ model Program {
   departments Department[]
   pos         Po[]
   psos        Pso[]
+  
+  students    Student[]
 
   order     Int       @default(0)
   isActive  Boolean   @default(true)
@@ -138,13 +169,13 @@ model Department {
   hodId String?
   hod   User? @relation("HODRelation", fields: [hodId], references: [id])
 
-  users   User[]   @relation("UserDepartment")
-  courses Course[]
+  users     User[]     @relation("UserDepartment")
+  courses   Course[]
+  faculties Faculty[]
+  students  Student[]
 
   description String?
   order       Int @default(0)
-  // Faculties in this department
-  faculties Faculty[]
 
   isActive  Boolean   @default(true)
   deletedAt DateTime?
@@ -178,12 +209,14 @@ model Course {
 
   createdById String
   createdBy   User @relation(fields: [createdById], references: [id])
-  // Faculty assignments for this course
-  facultyAssignments CourseFaculty[]
+
   regulation  String?
   description String?
 
-  clos Clo[]
+  clos        Clo[]
+  assessments Assessment[]
+  enrollments StudentCourseEnrollment[]
+  facultyAssignments CourseFaculty[]
 
   isActive  Boolean   @default(true)
   deletedAt DateTime?
@@ -221,6 +254,8 @@ model Clo {
 
   poMappings  CloPoMapping[]
   psoMappings CloPsoMapping[]
+  assessmentClos AssessmentClo[]
+  marks       Mark[]
 
   isActive  Boolean   @default(true)
   deletedAt DateTime?
@@ -339,16 +374,15 @@ model Faculty {
   designation     String?
   qualifications  String?
 
-  // Faculty belongs to a department
   departmentId    String
   department      Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
 
-  // Link to User account for authentication
   userId          String?
   user            User?      @relation(fields: [userId], references: [id])
 
-  // Faculty can be assigned to multiple courses
   courseAssignments CourseFaculty[]
+  assessments     Assessment[]
+    finalizedAssessments Assessment[] @relation("FinalizedAssessments")
 
   isActive  Boolean   @default(true)
   deletedAt DateTime?
@@ -365,11 +399,12 @@ model Faculty {
 // =======================================
 // COURSE-FACULTY ASSIGNMENT
 // =======================================
+
 model CourseFaculty {
   courseId            String
   facultyId           String
   semester            Int
-  year                Int     // Academic year e.g., 2024
+  year                Int
   
   teachingMethodology String?
   assessmentMode      String?
@@ -386,4 +421,164 @@ model CourseFaculty {
   @@index([semester])
   @@index([year])
   @@map("course_faculties")
+}
+
+// =======================================
+// ASSESSMENT
+// =======================================
+
+model Assessment {
+  id        String @id @default(cuid())
+  
+  courseId  String
+  course    Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  facultyId String
+  faculty   Faculty @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  
+  semester  Int
+  year      Int
+  
+  title       String
+  description String?
+  
+  maxMarks  Float
+  weightage Float @default(0)
+  
+  type      AssessmentType
+  mode      AssessmentMode
+  subType   String?
+  
+  scheduledDate     DateTime?
+  submissionDeadline DateTime?
+  
+  isActive  Boolean   @default(true)
+  
+  // Marks finalization tracking
+  isMarksFinalized Boolean @default(false)
+  marksFinalizedAt DateTime?
+  marksFinalizedById String?
+  marksFinalizedBy Faculty? @relation("FinalizedAssessments", fields: [marksFinalizedById], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  assessmentClos AssessmentClo[]
+  marks          Mark[]
+  
+  @@index([courseId])
+  @@index([facultyId])
+  @@index([semester])
+  @@index([year])
+  @@index([type])
+  @@index([isMarksFinalized])
+  @@map("assessments")
+}
+// =======================================
+// ASSESSMENT CLO MAPPING
+// =======================================
+
+model AssessmentClo {
+  assessmentId String
+  cloId        String
+  bloomLevel   BloomLevel
+  weightage    Float @default(0)
+  marksAllocated Float
+  
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  clo        Clo       @relation(fields: [cloId], references: [id], onDelete: Cascade)
+  
+  @@id([assessmentId, cloId, bloomLevel])
+  @@index([assessmentId])
+  @@index([cloId])
+  @@map("assessment_clos")
+}
+
+// =======================================
+// STUDENT
+// =======================================
+
+model Student {
+  id              String @id @default(cuid())
+  rollNumber      String @unique
+  admissionYear   Int
+  currentSemester Int
+  
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  
+  programId String
+  program   Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+  
+  userId String?@unique
+  user   User?   @relation(fields: [userId], references: [id])
+  
+  enrollments StudentCourseEnrollment[]
+  marks       Mark[]
+  
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([departmentId])
+  @@index([programId])
+  @@index([userId])
+  @@map("students")
+}
+
+// =======================================
+// MARK
+// =======================================
+
+model Mark {
+  studentId     String
+  assessmentId  String
+  cloId         String
+  
+  marksObtained Float @default(0)
+  
+  enteredById String
+  enteredBy   User @relation("MarkEnterer", fields: [enteredById], references: [id], onDelete: Cascade)
+  
+  enteredAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  clo        Clo        @relation(fields: [cloId], references: [id], onDelete: Cascade)
+  
+  @@id([studentId, assessmentId, cloId])
+  @@index([studentId])
+  @@index([assessmentId])
+  @@index([cloId])
+  @@index([enteredById])
+  @@map("marks")
+}
+
+// =======================================
+// STUDENT COURSE ENROLLMENT
+// =======================================
+
+model StudentCourseEnrollment {
+  studentId String
+  courseId  String
+  semester  Int
+  year      Int
+  
+  status EnrollmentStatus @default(ENROLLED)
+  
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@id([studentId, courseId, semester, year])
+  @@index([studentId])
+  @@index([courseId])
+  @@index([semester])
+  @@index([year])
+  @@map("student_course_enrollments")
 }
