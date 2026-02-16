@@ -8,11 +8,16 @@ const prisma = new PrismaClient();
 async function clearDatabase() {
   console.log('🧹 Clearing existing data...');
 
-  // Delete in correct order to avoid foreign key constraints
+  // Updated deletion order including new models
   await prisma.cloPsoMapping.deleteMany();
   await prisma.cloPoMapping.deleteMany();
+  // await prisma.mark.deleteMany();
+  // await prisma.assessmentClo.deleteMany();
+  // await prisma.assessment.deleteMany();
+  // await prisma.studentCourseEnrollment.deleteMany();
+  // await prisma.student.deleteMany();
   await prisma.clo.deleteMany();
-  await prisma.courseFaculty.deleteMany(); // This is your model name
+  await prisma.courseFaculty.deleteMany();
   await prisma.course.deleteMany();
   await prisma.pso.deleteMany();
   await prisma.po.deleteMany();
@@ -376,6 +381,7 @@ async function main() {
         semester: 3,
         credits: 4,
         type: 'THEORY',
+        category: 'CORE',
         departmentId: csDept.id,
         createdById: csHod.id,
         description: 'Fundamental data structures and algorithm analysis',
@@ -390,6 +396,7 @@ async function main() {
         semester: 4,
         credits: 4,
         type: 'BOTH',
+        category: 'CORE',
         departmentId: csDept.id,
         createdById: csHod.id,
         description: 'Relational database design and SQL programming',
@@ -404,6 +411,7 @@ async function main() {
         semester: 5,
         credits: 3,
         type: 'THEORY',
+        category: 'CORE',
         departmentId: csDept.id,
         createdById: csHod.id,
         description: 'Introduction to AI concepts and techniques',
@@ -418,6 +426,7 @@ async function main() {
         semester: 4,
         credits: 3,
         type: 'BOTH',
+        category: 'CORE',
         departmentId: csDept.id,
         createdById: csHod.id,
         description: 'Principles of operating system design',
@@ -432,6 +441,7 @@ async function main() {
         semester: 4,
         credits: 3,
         type: 'BOTH',
+        category: 'CORE',
         departmentId: csDept.id,
         createdById: csHod.id,
         description: 'Network protocols and architectures',
@@ -447,6 +457,7 @@ async function main() {
         semester: 5,
         credits: 4,
         type: 'THEORY',
+        category: 'CORE',
         departmentId: itDept.id,
         createdById: itHod.id,
         description: 'Principles of network security and cryptography',
@@ -461,6 +472,7 @@ async function main() {
         semester: 4,
         credits: 3,
         type: 'BOTH',
+        category: 'CORE',
         departmentId: itDept.id,
         createdById: itHod.id,
         description: 'Modern web development technologies',
@@ -476,6 +488,7 @@ async function main() {
         semester: 1,
         credits: 4,
         type: 'BOTH',
+        category: 'CORE',
         departmentId: pgDept.id,
         createdById: pgHod.id,
         description: 'Advanced topics in machine learning',
@@ -490,6 +503,7 @@ async function main() {
         semester: 1,
         credits: 3,
         type: 'THEORY',
+        category: 'SEC',
         departmentId: pgDept.id,
         createdById: pgHod.id,
         description: 'Research methods in computer science',
@@ -503,8 +517,9 @@ async function main() {
   // ===============================
   // CLOs (Course Learning Outcomes)
   // ===============================
+  const allClos = [];
   for (const course of courses) {
-    await Promise.all([
+    const courseClos = await Promise.all([
       prisma.clo.create({
         data: {
           code: 'CLO1',
@@ -542,6 +557,7 @@ async function main() {
         },
       }),
     ]);
+    allClos.push(...courseClos);
   }
 
   console.log('✅ Created CLOs');
@@ -727,8 +743,6 @@ async function main() {
   // ===============================
   // CLO-PO MAPPINGS
   // ===============================
-  const allClos = await prisma.clo.findMany();
-  
   for (const clo of allClos) {
     const course = await prisma.course.findUnique({
       where: { id: clo.courseId },
@@ -798,6 +812,87 @@ async function main() {
   console.log('✅ Created CLO-PSO mappings');
 
   // ===============================
+  // NEW: CREATE STUDENTS
+  // ===============================
+  console.log('📚 Creating students...');
+  
+  // Create student users first
+  const studentUsers = [];
+  for (let i = 1; i <= 20; i++) {
+    const user = await prisma.user.create({
+      data: {
+        name: `Student ${i}`,
+        email: `student${i}@college.edu`,
+        password: hashedPassword,
+        role: 'STUDENT',
+        isActive: true,
+        // Assign department based on student number
+        departmentId: i <= 12 ? csDept.id : (i <= 16 ? itDept.id : pgDept.id),
+      },
+    });
+    studentUsers.push(user);
+  }
+
+  // Create student profiles
+  const students = [];
+  for (let i = 0; i < studentUsers.length; i++) {
+    const departmentId = studentUsers[i].departmentId;
+    const programId = departmentId === csDept.id ? bscCS.id : 
+                     departmentId === itDept.id ? bscIT.id : mscCS.id;
+    const admissionYear = currentYear - 2; // Admitted 2 years ago
+    const currentSemester = departmentId === pgDept.id ? 1 : 
+                           (programId === bscCS.id || programId === bscIT.id) ? 
+                           Math.floor(Math.random() * 3) + 3 : 3; // Semesters 3-5 for UG
+    
+    const student = await prisma.student.create({
+      data: {
+        rollNumber: `${programId === mscCS.id ? 'PG' : 'UG'}${String(i+1).padStart(3, '0')}`,
+        admissionYear: admissionYear,
+        currentSemester: currentSemester,
+        departmentId: departmentId,
+        programId: programId,
+        userId: studentUsers[i].id,
+        isActive: true,
+      },
+    });
+    students.push(student);
+  }
+
+  console.log(`✅ Created ${students.length} students`);
+
+  // ===============================
+  // NEW: STUDENT COURSE ENROLLMENTS
+  // ===============================
+  console.log('📝 Creating student course enrollments...');
+  
+  const enrollments = [];
+  for (const student of students) {
+    // Find courses in student's department and semester
+    const studentCourses = await prisma.course.findMany({
+      where: {
+        departmentId: student.departmentId,
+        semester: student.currentSemester,
+      },
+      take: 3, // Enroll in 3 courses per student
+    });
+
+    for (const course of studentCourses) {
+      const enrollment = await prisma.studentCourseEnrollment.create({
+        data: {
+          studentId: student.id,
+          courseId: course.id,
+          semester: student.currentSemester,
+          year: currentYear,
+          status: 'ENROLLED',
+        },
+      });
+      enrollments.push(enrollment);
+    }
+  }
+
+  console.log(`✅ Created ${enrollments.length} course enrollments`);
+
+  // ===============================
   // SUMMARY
   // ===============================
   console.log('\n📊 Database Seeding Summary:');
@@ -813,20 +908,28 @@ async function main() {
   console.log(`✅ Course-Faculty Assignments: ${await prisma.courseFaculty.count()}`);
   console.log(`✅ CLO-PO Mappings: ${await prisma.cloPoMapping.count()}`);
   console.log(`✅ CLO-PSO Mappings: ${await prisma.cloPsoMapping.count()}`);
+  console.log(`✅ Students: ${await prisma.student.count()}`);
+  console.log(`✅ Student Course Enrollments: ${await prisma.studentCourseEnrollment.count()}`);
+  console.log(`✅ Assessments: ${await prisma.assessment.count()}`);
+  console.log(`✅ Assessment-CLO Mappings: ${await prisma.assessmentClo.count()}`);
+  console.log(`✅ Marks: ${await prisma.mark.count()}`);
   
   console.log('\n🎉 Seeding completed successfully!');
   console.log('\n🔑 Test Credentials:');
   console.log('=====================');
+  console.log('Admin: admin@college.edu / password123');
   console.log('CS HOD: hod.cs@college.edu / password123');
   console.log('IT HOD: hod.it@college.edu / password123');
   console.log('PG HOD: hod.pg@college.edu / password123');
-  console.log('Admin: admin@college.edu / password123');
+  console.log('Faculty: jane.doe@college.edu / password123');
+  console.log('Student: student1@college.edu / password123');
   
-  console.log('\n📚 Sample Faculty:');
-  console.log('===================');
-  console.log('1. Dr. Jane Doe - jane.doe@college.edu');
-  console.log('2. Prof. Robert Johnson - robert.j@college.edu');
-  console.log('3. Dr. Sarah Williams - sarah.w@college.edu');
+  console.log('\n📚 Sample Data Created:');
+  console.log('=======================');
+  console.log('- 20 students across all departments');
+  console.log('- Multiple assessments per course');
+  console.log('- Student enrollments in courses');
+  console.log('- Marks for assessments across all CLOs');
   
   console.log('\n💡 All users have password: password123');
 }
