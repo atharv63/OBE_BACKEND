@@ -5,7 +5,9 @@ const {
   getDashboardStats,
   getAllAssignments,
   getDepartmentInfo,
-  getCourseDetails
+  getCourseDetails,
+  submitReportToHOD,
+  checkReportSubmission,
 } = require("../controllers/facultyController");
 
 const { authenticate } = require("../middleware/auth");
@@ -30,5 +32,11 @@ router.get("/department", authenticate, getDepartmentInfo);
 
 // Get course details with CLOs
 router.get("/courses/:courseId", authenticate, getCourseDetails);
+
+// In your facultyRoutes.js
+router.post("/reports/submit-to-hod",authenticate, submitReportToHOD);
+
+// In your faculty routes file
+router.get('/reports/check-submission', authenticate, checkReportSubmission);
 
 module.exports = router;
