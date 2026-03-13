@@ -82,6 +82,11 @@ enum EnrollmentStatus {
   DROPPED
   FAILED
 }
+enum ReportType {
+  SINGLE
+  COMBINED
+}
+
 
 // =======================================
 // USER
@@ -111,7 +116,7 @@ model User {
   student    Student?
   
   enteredMarks Mark[] @relation("MarkEnterer")
-
+  createdReports  PerformanceReport[] @relation("UserCreatedReports")
   @@map("users")
 }
 
@@ -209,7 +214,7 @@ model Course {
 
   createdById String
   createdBy   User @relation(fields: [createdById], references: [id])
-
+  performanceReports PerformanceReport[]
   regulation  String?
   description String?
 
@@ -581,4 +586,45 @@ model StudentCourseEnrollment {
   @@index([semester])
   @@index([year])
   @@map("student_course_enrollments")
+}
+// =======================================
+// PERFORMANCE REPORT
+// =======================================
+
+model PerformanceReport {
+  // Primary identifiers
+  id          String   @id @default(cuid())
+  reportName  String   @map("report_name")
+  
+  // The critical part: JSON object with all parameters
+  reportParameters Json   @map("report_parameters")
+  
+  // Metadata
+  createdById String   @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Status flags
+  isSubmittedToHod   Boolean  @default(false) @map("is_submitted_to_hod")
+  submittedToHodAt   DateTime? @map("submitted_to_hod_at")
+  
+  // Additional tracking
+  reportType    ReportType @default(COMBINED) @map("report_type")
+  academicYear  String?    @map("academic_year")
+  
+  // Denormalized field for faster filtering
+  courseId      String?    @map("course_id")
+  
+  // Relations
+  createdByUser  User?  @relation("UserCreatedReports", fields: [createdById], references: [id])
+  course         Course? @relation(fields: [courseId], references: [id])
+  
+  // Indexes for fast lookup
+  @@index([createdById])
+  @@index([isSubmittedToHod])
+  @@index([reportType])
+  @@index([academicYear])
+  @@index([courseId])
+  
+  @@map("performance_reports")
 }

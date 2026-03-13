@@ -1,4 +1,5 @@
 // backend/src/app.js
+
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -49,6 +50,11 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+}
+,(err) => {
+  if (err) {
+    console.error("🔥 Failed to start server:", err);
+  }
 });
 
 module.exports = app;
