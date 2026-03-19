@@ -222,6 +222,7 @@ model Course {
   assessments Assessment[]
   enrollments StudentCourseEnrollment[]
   facultyAssignments CourseFaculty[]
+  indirectAssessments IndirectAssessment[]
 
   isActive  Boolean   @default(true)
   deletedAt DateTime?
@@ -266,6 +267,7 @@ model Clo {
   deletedAt DateTime?
 
   createdAt DateTime @default(now())
+  IndirectAssessment IndirectAssessment[]
   updatedAt DateTime @updatedAt
 
   @@unique([code, courseId])
@@ -519,6 +521,7 @@ model Student {
   user   User?   @relation(fields: [userId], references: [id])
   
   enrollments StudentCourseEnrollment[]
+  indirectAssessments IndirectAssessment[]
   marks       Mark[]
   
   isActive  Boolean   @default(true)
@@ -627,4 +630,38 @@ model PerformanceReport {
   @@index([courseId])
   
   @@map("performance_reports")
+}
+
+// =======================================
+// INDIRECT ASSESSMENT (COURSE EXIT SURVEY)
+// =======================================
+
+model IndirectAssessment {
+  id        Int    @id @default(autoincrement())
+  
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  cloId     String
+  clo       Clo     @relation(fields: [cloId], references: [id], onDelete: Cascade)
+  
+  courseId  String
+  course    Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  year      Int
+  semester  Int
+  
+  rating    Float   @map("rating") // Decimal(4,2) in your spec, using Float in Prisma
+  source    String? // Optional source field (e.g., "Google Form", "Manual Entry")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, cloId, courseId, year, semester])
+  @@index([studentId])
+  @@index([cloId])
+  @@index([courseId])
+  @@index([year])
+  @@index([semester])
+  @@map("indirect_assessments")
 }
