@@ -3,7 +3,7 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 // backend/controllers/faculty/indirectAssessment.controller.js - Update the import function
-
+// backend/controllers/faculty/indirectAssessment.controller.js - Update the import function
 const importIndirectAssessments = async (req, res) => {
   try {
     const { courseId } = req.params;
@@ -106,6 +106,49 @@ const importIndirectAssessments = async (req, res) => {
     console.log(`\nProcessing ${data.length} rows with ${Object.keys(mappings.cloColumns).length} CLOs each`);
     console.log(`Total expected ratings: ${results.totalExpectedRatings}`);
 
+    // First, get all enrolled students for this course, semester, and year
+    console.log(`\nFetching enrolled students for course ${courseId}, semester ${semester}, year ${year}`);
+    const enrolledStudents = await prisma.studentCourseEnrollment.findMany({
+      where: {
+        courseId: courseId,
+        semester: parseInt(semester),
+        year: parseInt(year),
+        status: 'ENROLLED'
+      },
+      select: {
+        studentId: true,
+        student: {
+          select: {
+            id: true,
+            rollNumber: true,
+            user: {
+              select: {
+                name: true,
+                email: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Create arrays and maps for enrolled students
+    const enrolledStudentIds = enrolledStudents.map(es => es.studentId);
+    
+    // Create a map of roll numbers to student IDs for quick lookup
+    const enrolledStudentMap = new Map();
+    const enrolledRollNumbers = [];
+    
+    enrolledStudents.forEach(enrollment => {
+      const rollNumber = enrollment.student.rollNumber;
+      enrolledStudentMap.set(rollNumber, enrollment.student.id);
+      enrolledRollNumbers.push(rollNumber);
+    });
+    
+    console.log(`Found ${enrolledStudents.length} enrolled students for this course/semester/year`);
+    console.log(`Enrolled student IDs:`, enrolledStudentIds);
+    console.log(`Enrolled roll numbers:`, enrolledRollNumbers);
+
     // Process each row (each student)
     for (const [rowIndex, row] of data.entries()) {
       const rowNumber = rowIndex + 1;
@@ -122,21 +165,22 @@ const importIndirectAssessments = async (req, res) => {
           continue;
         }
 
-        // Find student by roll number
-        console.log(`Looking up student with rollNo: "${rollNo}"`);
-        const student = await prisma.student.findUnique({
-          where: { rollNumber: rollNo }
-        });
-
-        if (!student) {
-          console.error(`Row ${rowNumber}: Student with roll no "${rollNo}" not found in database`);
-          console.log(`Available roll numbers in DB: (check your student table)`);
+        // Check if this roll number is enrolled using the map
+        const studentId = enrolledStudentMap.get(rollNo);
+        
+        if (!studentId) {
+          console.error(`Row ${rowNumber}: Student with roll no "${rollNo}" is NOT enrolled in this course for semester ${semester}, year ${year}`);
+          console.log(`Enrolled roll numbers for this course:`, enrolledRollNumbers);
           results.failed += Object.keys(mappings.cloColumns).length;
-          results.errors.push(`Row ${rowNumber}: Student with roll no ${rollNo} not found`);
+          results.errors.push(`Row ${rowNumber}: Student ${rollNo} is not enrolled in this course for semester ${semester}, year ${year}`);
           continue;
         }
 
-        console.log(`Student found: ID=${student.id}, Roll=${student.rollNumber}`);
+        // Get the full enrollment record to access student details if needed
+        const enrollment = enrolledStudents.find(e => e.student.rollNumber === rollNo);
+        console.log(`Student found: ID=${studentId}, Roll=${rollNo}`);
+        console.log(`Student name: ${enrollment?.student?.user?.name || 'N/A'}`);
+        console.log(`Enrollment verified: Student ${rollNo} is enrolled in this course`);
 
         // Process each CLO rating for this student
         for (const [cloCode, column] of Object.entries(mappings.cloColumns)) {
@@ -182,7 +226,7 @@ const importIndirectAssessments = async (req, res) => {
 
             // Check if record already exists
             console.log(`  Checking for existing record with:`);
-            console.log(`    studentId: ${student.id}`);
+            console.log(`    studentId: ${studentId}`);
             console.log(`    cloId: ${cloId}`);
             console.log(`    courseId: ${courseId}`);
             console.log(`    year: ${parseInt(year)}`);
@@ -191,7 +235,7 @@ const importIndirectAssessments = async (req, res) => {
             const existingRecord = await prisma.indirectAssessment.findUnique({
               where: {
                 studentId_cloId_courseId_year_semester: {
-                  studentId: student.id,
+                  studentId: studentId,
                   cloId: cloId,
                   courseId: courseId,
                   year: parseInt(year),
@@ -203,12 +247,12 @@ const importIndirectAssessments = async (req, res) => {
             console.log(`  Existing record: ${existingRecord ? 'FOUND (will update)' : 'NOT FOUND (will create)'}`);
 
             // Create or update indirect assessment
-            console.log(`  Attempting to upsert rating for student ${student.id}, CLO ${cloId}, rating ${rating}`);
+            console.log(`  Attempting to upsert rating for student ${studentId}, CLO ${cloId}, rating ${rating}`);
             
             const operation = await prisma.indirectAssessment.upsert({
               where: {
                 studentId_cloId_courseId_year_semester: {
-                  studentId: student.id,
+                  studentId: studentId,
                   cloId: cloId,
                   courseId: courseId,
                   year: parseInt(year),
@@ -220,7 +264,7 @@ const importIndirectAssessments = async (req, res) => {
                 source: "Excel Import"
               },
               create: {
-                studentId: student.id,
+                studentId: studentId,
                 cloId: cloId,
                 courseId: courseId,
                 year: parseInt(year),
