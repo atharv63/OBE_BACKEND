@@ -16,7 +16,7 @@ const importIndirectAssessments = async (req, res) => {
     console.log(`User ID: ${userId}`);
     console.log(`Mappings:`, JSON.stringify(mappings, null, 2));
     console.log(`Data rows received: ${data?.length || 0}`);
-    
+
     // Log the actual data being sent
     console.log("\n=== DATA BEING IMPORTED ===");
     data?.forEach((row, index) => {
@@ -24,15 +24,16 @@ const importIndirectAssessments = async (req, res) => {
     });
 
     if (!courseId || !year || !semester || !mappings || !data) {
-      console.error("Missing required fields:", { 
-        courseId: !!courseId, 
-        year: !!year, 
-        semester: !!semester, 
-        mappings: !!mappings, 
-        data: !!data 
+      console.error("Missing required fields:", {
+        courseId: !!courseId,
+        year: !!year,
+        semester: !!semester,
+        mappings: !!mappings,
+        data: !!data,
       });
-      return res.status(400).json({ 
-        error: "Missing required fields: courseId, year, semester, mappings, data" 
+      return res.status(400).json({
+        error:
+          "Missing required fields: courseId, year, semester, mappings, data",
       });
     }
 
@@ -47,36 +48,40 @@ const importIndirectAssessments = async (req, res) => {
             facultyAssignments: {
               some: {
                 faculty: {
-                  userId: userId
-                }
-              }
-            }
-          }
-        ]
+                  userId: userId,
+                },
+              },
+            },
+          },
+        ],
       },
       include: {
         clos: {
           where: { isActive: true },
-          select: { id: true, code: true }
-        }
-      }
+          select: { id: true, code: true },
+        },
+      },
     });
 
     if (!course) {
-      console.error(`Course not found or access denied for courseId: ${courseId}, userId: ${userId}`);
-      return res.status(404).json({ error: "Course not found or access denied" });
+      console.error(
+        `Course not found or access denied for courseId: ${courseId}, userId: ${userId}`,
+      );
+      return res
+        .status(404)
+        .json({ error: "Course not found or access denied" });
     }
 
     console.log(`Course found: ${course.code} - ${course.name}`);
     console.log(`Active CLOs found: ${course.clos.length}`);
-    console.log(`CLO codes:`, course.clos.map(c => c.code).join(', '));
+    console.log(`CLO codes:`, course.clos.map((c) => c.code).join(", "));
 
     // Create a map of CLO codes to IDs
     const cloMap = {};
-    course.clos.forEach(clo => {
+    course.clos.forEach((clo) => {
       cloMap[clo.code] = clo.id;
     });
-    console.log(`CLO Map created:`, Object.keys(cloMap).join(', '));
+    console.log(`CLO Map created:`, Object.keys(cloMap).join(", "));
 
     // Validate that all CLOs in mappings exist in the course
     const missingClos = [];
@@ -85,35 +90,40 @@ const importIndirectAssessments = async (req, res) => {
         missingClos.push(cloCode);
       }
     }
-    
+
     if (missingClos.length > 0) {
-      console.error(`Missing CLOs in course: ${missingClos.join(', ')}`);
-      console.error(`Available CLOs:`, Object.keys(cloMap).join(', '));
-      return res.status(400).json({ 
-        error: `The following CLOs are not found in this course: ${missingClos.join(', ')}`,
-        availableClos: Object.keys(cloMap)
+      console.error(`Missing CLOs in course: ${missingClos.join(", ")}`);
+      console.error(`Available CLOs:`, Object.keys(cloMap).join(", "));
+      return res.status(400).json({
+        error: `The following CLOs are not found in this course: ${missingClos.join(", ")}`,
+        availableClos: Object.keys(cloMap),
       });
     }
 
     const results = {
       totalRows: data.length,
-      totalExpectedRatings: data.length * Object.keys(mappings.cloColumns).length,
+      totalExpectedRatings:
+        data.length * Object.keys(mappings.cloColumns).length,
       successful: 0,
       failed: 0,
-      errors: []
+      errors: [],
     };
 
-    console.log(`\nProcessing ${data.length} rows with ${Object.keys(mappings.cloColumns).length} CLOs each`);
+    console.log(
+      `\nProcessing ${data.length} rows with ${Object.keys(mappings.cloColumns).length} CLOs each`,
+    );
     console.log(`Total expected ratings: ${results.totalExpectedRatings}`);
 
     // First, get all enrolled students for this course, semester, and year
-    console.log(`\nFetching enrolled students for course ${courseId}, semester ${semester}, year ${year}`);
+    console.log(
+      `\nFetching enrolled students for course ${courseId}, semester ${semester}, year ${year}`,
+    );
     const enrolledStudents = await prisma.studentCourseEnrollment.findMany({
       where: {
         courseId: courseId,
         semester: parseInt(semester),
         year: parseInt(year),
-        status: 'ENROLLED'
+        status: "ENROLLED",
       },
       select: {
         studentId: true,
@@ -124,28 +134,30 @@ const importIndirectAssessments = async (req, res) => {
             user: {
               select: {
                 name: true,
-                email: true
-              }
-            }
-          }
-        }
-      }
+                email: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     // Create arrays and maps for enrolled students
-    const enrolledStudentIds = enrolledStudents.map(es => es.studentId);
-    
+    const enrolledStudentIds = enrolledStudents.map((es) => es.studentId);
+
     // Create a map of roll numbers to student IDs for quick lookup
     const enrolledStudentMap = new Map();
     const enrolledRollNumbers = [];
-    
-    enrolledStudents.forEach(enrollment => {
+
+    enrolledStudents.forEach((enrollment) => {
       const rollNumber = enrollment.student.rollNumber;
       enrolledStudentMap.set(rollNumber, enrollment.student.id);
       enrolledRollNumbers.push(rollNumber);
     });
-    
-    console.log(`Found ${enrolledStudents.length} enrolled students for this course/semester/year`);
+
+    console.log(
+      `Found ${enrolledStudents.length} enrolled students for this course/semester/year`,
+    );
     console.log(`Enrolled student IDs:`, enrolledStudentIds);
     console.log(`Enrolled roll numbers:`, enrolledRollNumbers);
 
@@ -153,11 +165,13 @@ const importIndirectAssessments = async (req, res) => {
     for (const [rowIndex, row] of data.entries()) {
       const rowNumber = rowIndex + 1;
       console.log(`\n--- Processing Row ${rowNumber} ---`);
-      
+
       try {
         const rollNo = row[mappings.rollNoColumn]?.toString().trim();
-        console.log(`Roll number from column ${mappings.rollNoColumn}: "${rollNo}"`);
-        
+        console.log(
+          `Roll number from column ${mappings.rollNoColumn}: "${rollNo}"`,
+        );
+
         if (!rollNo) {
           console.error(`Row ${rowNumber}: Missing roll number`);
           results.failed += Object.keys(mappings.cloColumns).length;
@@ -167,60 +181,87 @@ const importIndirectAssessments = async (req, res) => {
 
         // Check if this roll number is enrolled using the map
         const studentId = enrolledStudentMap.get(rollNo);
-        
+
         if (!studentId) {
-          console.error(`Row ${rowNumber}: Student with roll no "${rollNo}" is NOT enrolled in this course for semester ${semester}, year ${year}`);
-          console.log(`Enrolled roll numbers for this course:`, enrolledRollNumbers);
+          console.error(
+            `Row ${rowNumber}: Student with roll no "${rollNo}" is NOT enrolled in this course for semester ${semester}, year ${year}`,
+          );
+          console.log(
+            `Enrolled roll numbers for this course:`,
+            enrolledRollNumbers,
+          );
           results.failed += Object.keys(mappings.cloColumns).length;
-          results.errors.push(`Row ${rowNumber}: Student ${rollNo} is not enrolled in this course for semester ${semester}, year ${year}`);
+          results.errors.push(
+            `Row ${rowNumber}: Student ${rollNo} is not enrolled in this course for semester ${semester}, year ${year}`,
+          );
           continue;
         }
 
         // Get the full enrollment record to access student details if needed
-        const enrollment = enrolledStudents.find(e => e.student.rollNumber === rollNo);
+        const enrollment = enrolledStudents.find(
+          (e) => e.student.rollNumber === rollNo,
+        );
         console.log(`Student found: ID=${studentId}, Roll=${rollNo}`);
-        console.log(`Student name: ${enrollment?.student?.user?.name || 'N/A'}`);
-        console.log(`Enrollment verified: Student ${rollNo} is enrolled in this course`);
+        console.log(
+          `Student name: ${enrollment?.student?.user?.name || "N/A"}`,
+        );
+        console.log(
+          `Enrollment verified: Student ${rollNo} is enrolled in this course`,
+        );
 
         // Process each CLO rating for this student
         for (const [cloCode, column] of Object.entries(mappings.cloColumns)) {
           console.log(`\n  Processing ${cloCode} from column ${column}`);
-          
+
           try {
             const ratingValue = row[column]?.toString().trim();
             console.log(`  Raw rating value: "${ratingValue}"`);
-            
-            if (!ratingValue && ratingValue !== '0') {
+
+            if (!ratingValue && ratingValue !== "0") {
               console.error(`  ${cloCode}: Missing rating value`);
               results.failed++;
-              results.errors.push(`Row ${rowNumber}, ${cloCode}: Missing rating`);
+              results.errors.push(
+                `Row ${rowNumber}, ${cloCode}: Missing rating`,
+              );
               continue;
             }
-
-            const rating = parseFloat(ratingValue);
+            let rating = parseFloat(ratingValue);
             console.log(`  Parsed rating: ${rating}`);
-            
+
             if (isNaN(rating)) {
-              console.error(`  ${cloCode}: Rating is not a number: "${ratingValue}"`);
+              console.error(
+                `  ${cloCode}: Rating is not a number: "${ratingValue}"`,
+              );
               results.failed++;
-              results.errors.push(`Row ${rowNumber}, ${cloCode}: Rating is not a number (got: ${ratingValue})`);
-              continue;
-            }
-            
-            if (rating < 1 || rating > 5) {
-              console.error(`  ${cloCode}: Rating out of range: ${rating} (must be 1-5)`);
-              results.failed++;
-              results.errors.push(`Row ${rowNumber}, ${cloCode}: Invalid rating (must be 1-5, got: ${rating})`);
+              results.errors.push(
+                `Row ${rowNumber}, ${cloCode}: Rating is not a number (got: ${ratingValue})`,
+              );
               continue;
             }
 
+            // Clamp to valid range 0–3 and round to nearest integer
+            if (rating < 0) {
+              console.warn(
+                `  ${cloCode}: Rating ${rating} below 0 — clamped to 0`,
+              );
+              rating = 0;
+            } else if (rating > 3) {
+              console.warn(
+                `  ${cloCode}: Rating ${rating} above 3 — clamped to 3`,
+              );
+              rating = 3;
+            }
+            rating = Math.round(rating);
+            console.log(`  Final rating after clamping: ${rating}`);
             const cloId = cloMap[cloCode];
             console.log(`  CLO ID for ${cloCode}: ${cloId}`);
-            
+
             if (!cloId) {
               console.error(`  ${cloCode}: CLO code not found in course CLOs`);
               results.failed++;
-              results.errors.push(`Row ${rowNumber}: CLO ${cloCode} not found for this course`);
+              results.errors.push(
+                `Row ${rowNumber}: CLO ${cloCode} not found for this course`,
+              );
               continue;
             }
 
@@ -231,7 +272,7 @@ const importIndirectAssessments = async (req, res) => {
             console.log(`    courseId: ${courseId}`);
             console.log(`    year: ${parseInt(year)}`);
             console.log(`    semester: ${parseInt(semester)}`);
-            
+
             const existingRecord = await prisma.indirectAssessment.findUnique({
               where: {
                 studentId_cloId_courseId_year_semester: {
@@ -239,16 +280,20 @@ const importIndirectAssessments = async (req, res) => {
                   cloId: cloId,
                   courseId: courseId,
                   year: parseInt(year),
-                  semester: parseInt(semester)
-                }
-              }
+                  semester: parseInt(semester),
+                },
+              },
             });
 
-            console.log(`  Existing record: ${existingRecord ? 'FOUND (will update)' : 'NOT FOUND (will create)'}`);
+            console.log(
+              `  Existing record: ${existingRecord ? "FOUND (will update)" : "NOT FOUND (will create)"}`,
+            );
 
             // Create or update indirect assessment
-            console.log(`  Attempting to upsert rating for student ${studentId}, CLO ${cloId}, rating ${rating}`);
-            
+            console.log(
+              `  Attempting to upsert rating for student ${studentId}, CLO ${cloId}, rating ${rating}`,
+            );
+
             const operation = await prisma.indirectAssessment.upsert({
               where: {
                 studentId_cloId_courseId_year_semester: {
@@ -256,12 +301,12 @@ const importIndirectAssessments = async (req, res) => {
                   cloId: cloId,
                   courseId: courseId,
                   year: parseInt(year),
-                  semester: parseInt(semester)
-                }
+                  semester: parseInt(semester),
+                },
               },
               update: {
                 rating: rating,
-                source: "Excel Import"
+                source: "Excel Import",
               },
               create: {
                 studentId: studentId,
@@ -270,18 +315,21 @@ const importIndirectAssessments = async (req, res) => {
                 year: parseInt(year),
                 semester: parseInt(semester),
                 rating: rating,
-                source: "Excel Import"
-              }
+                source: "Excel Import",
+              },
             });
 
-            console.log(`  ✓ SUCCESS: ${existingRecord ? 'Updated' : 'Created'} rating ${rating} for ${cloCode}`);
+            console.log(
+              `  ✓ SUCCESS: ${existingRecord ? "Updated" : "Created"} rating ${rating} for ${cloCode}`,
+            );
             results.successful++;
-            
           } catch (error) {
             console.error(`  ✗ ERROR processing ${cloCode}:`, error.message);
             console.error(error.stack);
             results.failed++;
-            results.errors.push(`Row ${rowNumber}, ${cloCode}: ${error.message}`);
+            results.errors.push(
+              `Row ${rowNumber}, ${cloCode}: ${error.message}`,
+            );
           }
         }
       } catch (error) {
@@ -298,31 +346,30 @@ const importIndirectAssessments = async (req, res) => {
     console.log(`Successful: ${results.successful}`);
     console.log(`Failed: ${results.failed}`);
     console.log(`Errors: ${results.errors.length}`);
-    
+
     if (results.errors.length > 0) {
       console.log("\nErrors:");
-      results.errors.forEach((err, i) => console.log(`  ${i+1}. ${err}`));
+      results.errors.forEach((err, i) => console.log(`  ${i + 1}. ${err}`));
     }
 
     // Return the results even if there are errors
     res.json({
       success: true,
-      data: results
+      data: results,
     });
-
   } catch (error) {
     console.error("=== FATAL ERROR in importIndirectAssessments ===");
     console.error("Error message:", error.message);
     console.error("Error stack:", error.stack);
-    
+
     // Check for specific Prisma errors
     if (error.code) {
       console.error(`Prisma Error Code: ${error.code}`);
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: error.message,
-      details: error.meta || null
+      details: error.meta || null,
     });
   }
 };
@@ -337,13 +384,15 @@ const getIndirectAssessments = async (req, res) => {
         id: courseId,
         OR: [
           { createdById: userId },
-          { facultyAssignments: { some: { faculty: { userId } } } }
-        ]
-      }
+          { facultyAssignments: { some: { faculty: { userId } } } },
+        ],
+      },
     });
 
     if (!course) {
-      return res.status(404).json({ error: "Course not found or access denied" });
+      return res
+        .status(404)
+        .json({ error: "Course not found or access denied" });
     }
 
     const where = { courseId };
@@ -357,8 +406,8 @@ const getIndirectAssessments = async (req, res) => {
           select: {
             id: true,
             rollNumber: true,
-            user: { select: { name: true } }
-          }
+            user: { select: { name: true } },
+          },
         },
         clo: {
           select: {
@@ -367,14 +416,11 @@ const getIndirectAssessments = async (req, res) => {
             statement: true,
             bloomLevel: true,
             order: true,
-            attainmentThreshold: true
-          }
-        }
+            attainmentThreshold: true,
+          },
+        },
       },
-      orderBy: [
-        { clo: { order: 'asc' } },
-        { student: { rollNumber: 'asc' } }
-      ]
+      orderBy: [{ clo: { order: "asc" } }, { student: { rollNumber: "asc" } }],
     });
 
     res.json({
@@ -383,10 +429,9 @@ const getIndirectAssessments = async (req, res) => {
         courseId,
         totalRatings: rawData.length,
         hasData: rawData.length > 0,
-        rawData
-      }
+        rawData,
+      },
     });
-
   } catch (error) {
     console.error("getIndirectAssessments error:", error);
     res.status(500).json({ error: error.message });
@@ -408,62 +453,58 @@ const getIndirectAssessmentMetadata = async (req, res) => {
             facultyAssignments: {
               some: {
                 faculty: {
-                  userId: userId
-                }
-              }
-            }
-          }
-        ]
-      }
+                  userId: userId,
+                },
+              },
+            },
+          },
+        ],
+      },
     });
 
     if (!course) {
-      return res.status(404).json({ error: "Course not found or access denied" });
+      return res
+        .status(404)
+        .json({ error: "Course not found or access denied" });
     }
 
     // Get distinct years and semesters
     const periods = await prisma.indirectAssessment.findMany({
       where: { courseId },
-      select: { 
-        year: true, 
-        semester: true 
+      select: {
+        year: true,
+        semester: true,
       },
-      distinct: ['year', 'semester'],
-      orderBy: [
-        { year: 'desc' },
-        { semester: 'desc' }
-      ]
+      distinct: ["year", "semester"],
+      orderBy: [{ year: "desc" }, { semester: "desc" }],
     });
 
     // Get all possible semesters from course enrollments
     const enrollmentPeriods = await prisma.studentCourseEnrollment.findMany({
-      where: { 
+      where: {
         courseId,
-        status: 'ENROLLED'
+        status: "ENROLLED",
       },
       select: {
         year: true,
-        semester: true
+        semester: true,
       },
-      distinct: ['year', 'semester'],
-      orderBy: [
-        { year: 'desc' },
-        { semester: 'desc' }
-      ]
+      distinct: ["year", "semester"],
+      orderBy: [{ year: "desc" }, { semester: "desc" }],
     });
 
     // Get CLOs for template reference
     const clos = await prisma.clo.findMany({
-      where: { 
+      where: {
         courseId,
-        isActive: true 
+        isActive: true,
       },
       select: {
         code: true,
         statement: true,
-        bloomLevel: true
+        bloomLevel: true,
       },
-      orderBy: { order: 'asc' }
+      orderBy: { order: "asc" },
     });
 
     res.json({
@@ -474,19 +515,18 @@ const getIndirectAssessmentMetadata = async (req, res) => {
         courseName: course.name,
         availablePeriods: periods,
         enrollmentPeriods,
-        clos: clos.map(c => ({
+        clos: clos.map((c) => ({
           code: c.code,
           statement: c.statement,
-          bloomLevel: c.bloomLevel
+          bloomLevel: c.bloomLevel,
         })),
         suggestedColumns: {
           rollNo: "Student Roll Number",
           cloCode: "CLO Code",
-          rating: "Rating (1-5)"
-        }
-      }
+          rating: "Rating (1-5)",
+        },
+      },
     });
-
   } catch (error) {
     console.error("getIndirectAssessmentMetadata error:", error);
     res.status(500).json({ error: error.message });
@@ -514,35 +554,36 @@ const deleteIndirectAssessments = async (req, res) => {
             facultyAssignments: {
               some: {
                 faculty: {
-                  userId: userId
-                }
-              }
-            }
-          }
-        ]
-      }
+                  userId: userId,
+                },
+              },
+            },
+          },
+        ],
+      },
     });
 
     if (!course) {
-      return res.status(404).json({ error: "Course not found or access denied" });
+      return res
+        .status(404)
+        .json({ error: "Course not found or access denied" });
     }
 
     const result = await prisma.indirectAssessment.deleteMany({
       where: {
         courseId,
         year: parseInt(year),
-        semester: parseInt(semester)
-      }
+        semester: parseInt(semester),
+      },
     });
 
     res.json({
       success: true,
       data: {
         message: `Deleted ${result.count} indirect assessments`,
-        count: result.count
-      }
+        count: result.count,
+      },
     });
-
   } catch (error) {
     console.error("deleteIndirectAssessments error:", error);
     res.status(500).json({ error: error.message });
@@ -565,72 +606,74 @@ const getImportTemplate = async (req, res) => {
             facultyAssignments: {
               some: {
                 faculty: {
-                  userId: userId
-                }
-              }
-            }
-          }
-        ]
+                  userId: userId,
+                },
+              },
+            },
+          },
+        ],
       },
       include: {
         department: {
           include: {
-            program: true
-          }
-        }
-      }
+            program: true,
+          },
+        },
+      },
     });
 
     if (!course) {
-      return res.status(404).json({ error: "Course not found or access denied" });
+      return res
+        .status(404)
+        .json({ error: "Course not found or access denied" });
     }
 
     // Get CLOs for the course
     const clos = await prisma.clo.findMany({
-      where: { 
+      where: {
         courseId,
-        isActive: true 
+        isActive: true,
       },
       select: {
         code: true,
         statement: true,
-        bloomLevel: true
+        bloomLevel: true,
       },
-      orderBy: { order: 'asc' }
+      orderBy: { order: "asc" },
     });
 
     // Get enrolled students
     const enrollments = await prisma.studentCourseEnrollment.findMany({
-      where: { 
+      where: {
         courseId,
-        status: 'ENROLLED'
+        status: "ENROLLED",
       },
       include: {
         student: {
           select: {
             rollNumber: true,
-            user: { 
-              select: { 
-                name: true 
-              } 
-            }
-          }
-        }
+            user: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
       },
       take: 10, // Limit for preview
       orderBy: {
-        student: { rollNumber: 'asc' }
-      }
+        student: { rollNumber: "asc" },
+      },
     });
 
     // Generate sample data
     const sampleData = [];
-    enrollments.forEach(enrollment => {
+    enrollments.forEach((enrollment) => {
       const row = {
         RollNo: enrollment.student.rollNumber,
-        StudentName: enrollment.student.user?.name || 'Student Name'
+        StudentName: enrollment.student.user?.name || "Student Name",
       };
-      clos.forEach(clo => {
+      clos.forEach((clo) => {
         row[clo.code] = Math.floor(Math.random() * 3) + 3; // Random 3-5 for sample
       });
       sampleData.push(row);
@@ -644,28 +687,27 @@ const getImportTemplate = async (req, res) => {
           code: course.code,
           name: course.name,
           semester: course.semester,
-          program: course.department.program.name
+          program: course.department.program.name,
         },
-        clos: clos.map(c => ({
+        clos: clos.map((c) => ({
           code: c.code,
           statement: c.statement,
-          bloomLevel: c.bloomLevel
+          bloomLevel: c.bloomLevel,
         })),
-        sampleStudents: enrollments.map(e => ({
+        sampleStudents: enrollments.map((e) => ({
           rollNo: e.student.rollNumber,
-          name: e.student.user?.name
+          name: e.student.user?.name,
         })),
         suggestedFormat: {
-          headers: ['RollNo', 'StudentName', ...clos.map(c => c.code)],
-          sampleRows: sampleData.slice(0, 3)
+          headers: ["RollNo", "StudentName", ...clos.map((c) => c.code)],
+          sampleRows: sampleData.slice(0, 3),
         },
         columnMappingInstructions: {
           rollNo: "Select column containing roll numbers",
-          ratings: "For each CLO, select the column containing its ratings"
-        }
-      }
+          ratings: "For each CLO, select the column containing its ratings",
+        },
+      },
     });
-
   } catch (error) {
     console.error("getImportTemplate error:", error);
     res.status(500).json({ error: error.message });
@@ -677,5 +719,5 @@ module.exports = {
   getIndirectAssessments,
   getIndirectAssessmentMetadata,
   deleteIndirectAssessments,
-  getImportTemplate
+  getImportTemplate,
 };
