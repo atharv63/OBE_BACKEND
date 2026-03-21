@@ -13,6 +13,10 @@ const hodRoutes = require("../routes/hodroutes");
 const facultyRoutes = require('../routes/facultyRoutes');
 const reportRoutes = require('../routes/reportRoutes')
 const assessmentRoutes = require('../routes/assesmentRoutes');
+const adminRoutes = require('../routes/adminRoutes')
+const adminUserRoutes = require('../routes/adminUserRoutes')
+const adminFacultyRoutes = require('../routes/adminFacultyRoutes')
+const adminDepartmentRoutes = require('../routes/adminDepartmentRoutes')
 const indirectAssessmentRoutes = require('../routes/indirectassessments');
 
 
@@ -47,6 +51,11 @@ app.use('/api/faculty', facultyRoutes);
 app.use('/api/reports', reportRoutes)
 app.use('/api', indirectAssessmentRoutes);
 
+// admin routes
+app.use('/api/admin/users', adminUserRoutes);
+app.use('/api/admin/faculty', adminFacultyRoutes);
+app.use('/api/admin/departments', adminDepartmentRoutes);
+app.use('/api/admin', adminRoutes);
 
 const PORT = process.env.PORT || 5000;
 
