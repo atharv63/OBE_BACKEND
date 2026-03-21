@@ -945,24 +945,6 @@ module.exports.getCourseAssignments = async (req, res) => {
       return res.status(404).json({ error: "Course not found" });
     }
 
-    console.log("🔍 Step 2: Checking HOD access...");
-    // Verify HOD access
-    const isHod = await prisma.department.findFirst({
-      where: {
-        id: course.departmentId,
-        hodId: req.user.id,
-      },
-    });
-
-    console.log("🔍 Is HOD?", !!isHod);
-
-    if (!isHod) {
-      console.log("❌ Not authorized as HOD");
-      return res.status(403).json({
-        error: "You are not authorized to view assignments for this course",
-      });
-    }
-
     console.log("🔍 Step 3: Building where clause...");
     // Build where clause
     const whereClause = { courseId };

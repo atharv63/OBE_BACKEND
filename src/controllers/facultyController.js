@@ -501,3 +501,230 @@ module.exports.getCourseDetails = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// Submit performance report to HOD
+
+module.exports.submitReportToHOD = async (req, res) => {
+  try {
+    const { 
+      reportName,
+      reportParameters,
+      reportType,
+      academicYear 
+    } = req.body;
+    
+    console.log('📤 Creating and submitting new report to HOD:', { 
+      reportName, 
+      userId: req.user.id 
+    });
+
+    // Validate required fields
+    if (!reportName || !reportParameters || !reportType) {
+      return res.status(400).json({ 
+        error: "Missing required fields",
+        message: "Please provide reportName, reportParameters, and reportType"
+      });
+    }
+
+    // First get faculty to verify permissions
+    const faculty = await prisma.faculty.findFirst({
+      where: { 
+        userId: req.user.id,
+        isActive: true 
+      }
+    });
+
+    if (!faculty) {
+      console.log('❌ Faculty not found for user:', req.user.id);
+      return res.status(404).json({ 
+        error: "Faculty not found",
+        message: "Please contact administrator to create your faculty profile"
+      });
+    }
+
+    console.log('✅ Faculty found:', faculty.name);
+
+    const courseId = reportParameters.courseId || null;
+
+    const recentReports = await prisma.performanceReport.findMany({
+      where: {
+        createdById: req.user.id,
+        reportType: reportType,
+        isSubmittedToHod: true,
+        createdAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000) 
+        }
+      }
+    });
+
+    // Manually check for duplicates by comparing reportParameters
+    const isDuplicate = recentReports.some(report => {
+      const params = report.reportParameters;
+      return (
+        params.courseId === reportParameters.courseId &&
+        params.semester === reportParameters.semester &&
+        params.year === reportParameters.year &&
+        // For combined reports, check assessmentIds
+        (reportType !== 'COMBINED' || 
+          JSON.stringify(params.assessmentIds) === JSON.stringify(reportParameters.assessmentIds))
+      );
+    });
+
+    if (isDuplicate) {
+      console.log('⚠️ Duplicate report submission prevented');
+      return res.status(409).json({
+        error: "Duplicate report",
+        message: "You have already submitted this report within the last 24 hours"
+      });
+    }
+
+    // Create new report with submitted status
+    const newReport = await prisma.performanceReport.create({
+      data: {
+        reportName,
+        reportParameters,
+        reportType,
+        academicYear: academicYear || null,
+        courseId,
+        createdById: req.user.id,
+        isSubmittedToHod: true,
+        submittedToHodAt: new Date()
+      },
+      include: {
+        createdByUser: {
+          select: {
+            name: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    console.log('✅ Report created and submitted successfully:', {
+      reportId: newReport.id,
+      submittedAt: newReport.submittedToHodAt
+    });
+
+    // Optional: Create notification for HOD
+    try {
+      const hod = await prisma.user.findFirst({
+        where: {
+          departmentId: faculty.departmentId,
+          role: 'HOD',
+          isActive: true
+        },
+        select: { id: true, name: true }
+      });
+
+      if (hod) {
+        console.log('📨 HOD notification would be sent to:', hod.name);
+        // You can implement notification creation here
+        // await prisma.notification.create({ ... });
+      }
+    } catch (notificationError) {
+      console.error('⚠️ Failed to create HOD notification:', notificationError);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Report submitted to HOD successfully",
+      report: {
+        id: newReport.id,
+        reportName: newReport.reportName,
+        reportType: newReport.reportType,
+        submittedToHodAt: newReport.submittedToHodAt,
+        isSubmittedToHod: newReport.isSubmittedToHod,
+        reportParameters: newReport.reportParameters
+      }
+    });
+
+  } catch (error) {
+    console.error("❌ submitReportToHOD error:", error);
+    res.status(500).json({ 
+      error: "Failed to submit report to HOD",
+      message: error.message 
+    });
+  }
+};
+module.exports.checkReportSubmission = async (req, res) => {
+  try {
+    const { courseId, semester, year, assessmentIds } = req.query;
+    
+    console.log('🔍 Checking report submission status:', { courseId, semester, year, assessmentIds });
+
+    // Validate required fields
+    if (!courseId || !semester || !year) {
+      return res.status(400).json({ 
+        error: "Missing required fields",
+        message: "Please provide courseId, semester, and year"
+      });
+    }
+
+    // Parse assessmentIds if provided (could be comma-separated string)
+    let assessmentIdsArray = [];
+    if (assessmentIds) {
+      assessmentIdsArray = assessmentIds.split(',').filter(id => id);
+    }
+
+    // Add date filter - check within last 24 hours
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    // First, get all recent reports
+    const reports = await prisma.performanceReport.findMany({
+      where: {
+        createdById: req.user.id,
+        reportType: assessmentIdsArray.length > 0 ? 'COMBINED' : 'SINGLE',
+        isSubmittedToHod: true,
+        createdAt: {
+          gte: oneDayAgo
+        }
+      }
+    });
+
+    // Manually filter by reportParameters in JavaScript
+    const isSubmitted = reports.some(report => {
+      const params = report.reportParameters;
+      
+      // Check if params exists and has the required fields
+      if (!params) return false;
+      
+      // Check basic parameters
+      const basicMatch = 
+        params.courseId === courseId &&
+        params.semester === parseInt(semester) &&
+        params.year === parseInt(year);
+      
+      if (!basicMatch) return false;
+
+      // For combined reports, check assessmentIds
+      if (assessmentIdsArray.length > 0) {
+        const reportAssessmentIds = params.assessmentIds || [];
+        // Check if arrays have same elements (order doesn't matter)
+        if (reportAssessmentIds.length !== assessmentIdsArray.length) return false;
+        
+        const arraysMatch = 
+          [...reportAssessmentIds].sort().join(',') === 
+          [...assessmentIdsArray].sort().join(',');
+        
+        return arraysMatch;
+      }
+
+      return true;
+    });
+
+    console.log('✅ Submission status checked:', { isSubmitted });
+
+    res.status(200).json({
+      success: true,
+      isSubmitted,
+      message: isSubmitted ? 'Report already submitted' : 'Report not submitted yet'
+    });
+
+  } catch (error) {
+    console.error("❌ checkReportSubmission error:", error);
+    res.status(500).json({ 
+      error: "Failed to check report submission status",
+      message: error.message 
+    });
+  }
+};

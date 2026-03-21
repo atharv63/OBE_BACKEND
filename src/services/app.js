@@ -1,4 +1,5 @@
 // backend/src/app.js
+
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -16,6 +17,7 @@ const adminRoutes = require('../routes/adminRoutes')
 const adminUserRoutes = require('../routes/adminUserRoutes')
 const adminFacultyRoutes = require('../routes/adminFacultyRoutes')
 const adminDepartmentRoutes = require('../routes/adminDepartmentRoutes')
+const indirectAssessmentRoutes = require('../routes/indirectassessments');
 
 
 const prisma = new PrismaClient();
@@ -47,6 +49,7 @@ app.use('/api/assessments', assessmentRoutes);
 // app.use('/api/assignments', facultyAssignmentRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/reports', reportRoutes)
+app.use('/api', indirectAssessmentRoutes);
 
 // admin routes
 app.use('/api/admin/users', adminUserRoutes);
@@ -58,6 +61,11 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+}
+,(err) => {
+  if (err) {
+    console.error("🔥 Failed to start server:", err);
+  }
 });
 
 module.exports = app;
