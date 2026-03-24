@@ -1,12 +1,12 @@
 // prisma/seed.js
-require('dotenv').config();
-const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcryptjs');
+require("dotenv").config();
+const { PrismaClient } = require("@prisma/client");
+const bcrypt = require("bcryptjs");
 
 const prisma = new PrismaClient();
 
 async function clearDatabase() {
-  console.log('🧹 Clearing existing data...');
+  console.log("🧹 Clearing existing data...");
 
   // Updated deletion order including new models
   // await prisma.cloPsoMapping.deleteMany();
@@ -26,12 +26,12 @@ async function clearDatabase() {
   // await prisma.department.deleteMany();
   // await prisma.program.deleteMany();
 
-  console.log('✅ Database cleared');
+  console.log("✅ Database cleared");
 }
 
 async function main() {
-  console.log('🌱 Seeding database...');
-  
+  console.log("🌱 Seeding database...");
+
   // Clear existing data
   await clearDatabase();
 
@@ -39,146 +39,146 @@ async function main() {
   // HASH PASSWORDS
   // ===============================
   const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash('password123', salt);
+  const hashedPassword = await bcrypt.hash("password123", salt);
 
   // ===============================
   // PROGRAM LEVELS
   // ===============================
   const ug = await prisma.program.create({
     data: {
-      name: 'Undergraduate',
-      code: 'UG',
-      slug: 'ug',
-      type: 'LEVEL',
-      level: 'UG',
-      description: 'Undergraduate level programs',
+      name: "Undergraduate",
+      code: "UG",
+      slug: "ug",
+      type: "LEVEL",
+      level: "UG",
+      description: "Undergraduate level programs",
       order: 1,
     },
   });
 
   const pg = await prisma.program.create({
     data: {
-      name: 'Postgraduate',
-      code: 'PG',
-      slug: 'pg',
-      type: 'LEVEL',
-      level: 'PG',
-      description: 'Postgraduate level programs',
+      name: "Postgraduate",
+      code: "PG",
+      slug: "pg",
+      type: "LEVEL",
+      level: "PG",
+      description: "Postgraduate level programs",
       order: 2,
     },
   });
 
-  console.log('✅ Created program levels');
+  console.log("✅ Created program levels");
 
   // ===============================
   // DEGREE PROGRAMS
   // ===============================
   const bscCS = await prisma.program.create({
     data: {
-      name: 'BSc Computer Science',
-      code: 'BSC-CS',
-      slug: 'bsc-computer-science',
-      type: 'DEGREE',
-      level: 'UG',
+      name: "BSc Computer Science",
+      code: "BSC-CS",
+      slug: "bsc-computer-science",
+      type: "DEGREE",
+      level: "UG",
       parentId: ug.id,
       duration: 3,
-      description: 'Bachelor of Science in Computer Science',
+      description: "Bachelor of Science in Computer Science",
       order: 1,
     },
   });
 
   const bscIT = await prisma.program.create({
     data: {
-      name: 'BSc Information Technology',
-      code: 'BSC-IT',
-      slug: 'bsc-information-technology',
-      type: 'DEGREE',
-      level: 'UG',
+      name: "BSc Information Technology",
+      code: "BSC-IT",
+      slug: "bsc-information-technology",
+      type: "DEGREE",
+      level: "UG",
       parentId: ug.id,
       duration: 3,
-      description: 'Bachelor of Science in Information Technology',
+      description: "Bachelor of Science in Information Technology",
       order: 2,
     },
   });
 
   const mscCS = await prisma.program.create({
     data: {
-      name: 'MSc Computer Science',
-      code: 'MSC-CS',
-      slug: 'msc-computer-science',
-      type: 'DEGREE',
-      level: 'PG',
+      name: "MSc Computer Science",
+      code: "MSC-CS",
+      slug: "msc-computer-science",
+      type: "DEGREE",
+      level: "PG",
       parentId: pg.id,
       duration: 2,
-      description: 'Master of Science in Computer Science',
+      description: "Master of Science in Computer Science",
       order: 3,
     },
   });
 
-  console.log('✅ Created degree programs');
+  console.log("✅ Created degree programs");
 
   // ===============================
   // DEPARTMENTS
   // ===============================
   const csDept = await prisma.department.create({
     data: {
-      name: 'Computer Science',
-      code: 'CS',
-      slug: 'computer-science',
+      name: "Computer Science",
+      code: "CS",
+      slug: "computer-science",
       programId: bscCS.id,
-      description: 'Department of Computer Science and Engineering',
+      description: "Department of Computer Science and Engineering",
       order: 1,
     },
   });
 
   const itDept = await prisma.department.create({
     data: {
-      name: 'Information Technology',
-      code: 'IT',
-      slug: 'information-technology',
+      name: "Information Technology",
+      code: "IT",
+      slug: "information-technology",
       programId: bscIT.id,
-      description: 'Department of Information Technology',
+      description: "Department of Information Technology",
       order: 2,
     },
   });
 
   const pgDept = await prisma.department.create({
     data: {
-      name: 'Computer Science (PG)',
-      code: 'CSPG',
-      slug: 'computer-science-pg',
+      name: "Computer Science (PG)",
+      code: "CSPG",
+      slug: "computer-science-pg",
       programId: mscCS.id,
-      description: 'Department of Computer Science - Postgraduate',
+      description: "Department of Computer Science - Postgraduate",
       order: 3,
     },
   });
 
-  console.log('✅ Created departments');
+  console.log("✅ Created departments");
 
   // ===============================
   // ADMIN USER
   // ===============================
   const admin = await prisma.user.create({
     data: {
-      name: 'System Administrator',
-      email: 'admin@college.edu',
+      name: "System Administrator",
+      email: "admin@college.edu",
       password: hashedPassword,
-      role: 'ADMIN',
+      role: "ADMIN",
       isActive: true,
     },
   });
 
-  console.log('✅ Created admin user');
+  console.log("✅ Created admin user");
 
   // ===============================
   // HOD USERS
   // ===============================
   const csHod = await prisma.user.create({
     data: {
-      name: 'Dr. John Smith',
-      email: 'hod.cs@college.edu',
+      name: "Dr. John Smith",
+      email: "hod.cs@college.edu",
       password: hashedPassword,
-      role: 'HOD',
+      role: "HOD",
       departmentId: csDept.id,
       isActive: true,
     },
@@ -186,10 +186,10 @@ async function main() {
 
   const itHod = await prisma.user.create({
     data: {
-      name: 'Dr. Emily Chen',
-      email: 'hod.it@college.edu',
+      name: "Dr. Emily Chen",
+      email: "hod.it@college.edu",
       password: hashedPassword,
-      role: 'HOD',
+      role: "HOD",
       departmentId: itDept.id,
       isActive: true,
     },
@@ -197,10 +197,10 @@ async function main() {
 
   const pgHod = await prisma.user.create({
     data: {
-      name: 'Dr. Robert Davis',
-      email: 'hod.pg@college.edu',
+      name: "Dr. Robert Davis",
+      email: "hod.pg@college.edu",
       password: hashedPassword,
-      role: 'HOD',
+      role: "HOD",
       departmentId: pgDept.id,
       isActive: true,
     },
@@ -209,20 +209,20 @@ async function main() {
   // Update departments with HOD IDs
   await prisma.department.updateMany({
     where: { id: csDept.id },
-    data: { hodId: csHod.id }
+    data: { hodId: csHod.id },
   });
 
   await prisma.department.updateMany({
     where: { id: itDept.id },
-    data: { hodId: itHod.id }
+    data: { hodId: itHod.id },
   });
 
   await prisma.department.updateMany({
     where: { id: pgDept.id },
-    data: { hodId: pgHod.id }
+    data: { hodId: pgHod.id },
   });
 
-  console.log('✅ Created HOD users');
+  console.log("✅ Created HOD users");
 
   // ===============================
   // FACULTY USERS
@@ -231,30 +231,30 @@ async function main() {
     // CS Department Faculty
     prisma.user.create({
       data: {
-        name: 'Dr. Jane Doe',
-        email: 'jane.doe@college.edu',
+        name: "Dr. Jane Doe",
+        email: "jane.doe@college.edu",
         password: hashedPassword,
-        role: 'FACULTY',
+        role: "FACULTY",
         departmentId: csDept.id,
         isActive: true,
       },
     }),
     prisma.user.create({
       data: {
-        name: 'Prof. Robert Johnson',
-        email: 'robert.j@college.edu',
+        name: "Prof. Robert Johnson",
+        email: "robert.j@college.edu",
         password: hashedPassword,
-        role: 'FACULTY',
+        role: "FACULTY",
         departmentId: csDept.id,
         isActive: true,
       },
     }),
     prisma.user.create({
       data: {
-        name: 'Dr. Sarah Williams',
-        email: 'sarah.w@college.edu',
+        name: "Dr. Sarah Williams",
+        email: "sarah.w@college.edu",
         password: hashedPassword,
-        role: 'FACULTY',
+        role: "FACULTY",
         departmentId: csDept.id,
         isActive: true,
       },
@@ -262,20 +262,20 @@ async function main() {
     // IT Department Faculty
     prisma.user.create({
       data: {
-        name: 'Prof. Michael Brown',
-        email: 'michael.b@college.edu',
+        name: "Prof. Michael Brown",
+        email: "michael.b@college.edu",
         password: hashedPassword,
-        role: 'FACULTY',
+        role: "FACULTY",
         departmentId: itDept.id,
         isActive: true,
       },
     }),
     prisma.user.create({
       data: {
-        name: 'Dr. Susan Taylor',
-        email: 'susan.t@college.edu',
+        name: "Dr. Susan Taylor",
+        email: "susan.t@college.edu",
         password: hashedPassword,
-        role: 'FACULTY',
+        role: "FACULTY",
         departmentId: itDept.id,
         isActive: true,
       },
@@ -283,17 +283,17 @@ async function main() {
     // PG Department Faculty
     prisma.user.create({
       data: {
-        name: 'Dr. James Anderson',
-        email: 'james.a@college.edu',
+        name: "Dr. James Anderson",
+        email: "james.a@college.edu",
         password: hashedPassword,
-        role: 'FACULTY',
+        role: "FACULTY",
         departmentId: pgDept.id,
         isActive: true,
       },
     }),
   ]);
 
-  console.log('✅ Created faculty users');
+  console.log("✅ Created faculty users");
 
   // ===============================
   // FACULTY PROFILES
@@ -302,9 +302,9 @@ async function main() {
     // CS Faculty
     prisma.faculty.create({
       data: {
-        name: 'Dr. Jane Doe',
-        designation: 'Professor',
-        qualifications: 'PhD in Computer Science, Stanford University',
+        name: "Dr. Jane Doe",
+        designation: "Professor",
+        qualifications: "PhD in Computer Science, Stanford University",
         departmentId: csDept.id,
         userId: facultyUsers[0].id,
         isActive: true,
@@ -312,9 +312,9 @@ async function main() {
     }),
     prisma.faculty.create({
       data: {
-        name: 'Prof. Robert Johnson',
-        designation: 'Associate Professor',
-        qualifications: 'M.Tech in Software Engineering, IIT Delhi',
+        name: "Prof. Robert Johnson",
+        designation: "Associate Professor",
+        qualifications: "M.Tech in Software Engineering, IIT Delhi",
         departmentId: csDept.id,
         userId: facultyUsers[1].id,
         isActive: true,
@@ -322,9 +322,9 @@ async function main() {
     }),
     prisma.faculty.create({
       data: {
-        name: 'Dr. Sarah Williams',
-        designation: 'Assistant Professor',
-        qualifications: 'PhD in Artificial Intelligence, MIT',
+        name: "Dr. Sarah Williams",
+        designation: "Assistant Professor",
+        qualifications: "PhD in Artificial Intelligence, MIT",
         departmentId: csDept.id,
         userId: facultyUsers[2].id,
         isActive: true,
@@ -333,9 +333,9 @@ async function main() {
     // IT Faculty
     prisma.faculty.create({
       data: {
-        name: 'Prof. Michael Brown',
-        designation: 'Professor',
-        qualifications: 'PhD in Information Technology, Carnegie Mellon',
+        name: "Prof. Michael Brown",
+        designation: "Professor",
+        qualifications: "PhD in Information Technology, Carnegie Mellon",
         departmentId: itDept.id,
         userId: facultyUsers[3].id,
         isActive: true,
@@ -343,9 +343,9 @@ async function main() {
     }),
     prisma.faculty.create({
       data: {
-        name: 'Dr. Susan Taylor',
-        designation: 'Associate Professor',
-        qualifications: 'PhD in Cybersecurity, Georgia Tech',
+        name: "Dr. Susan Taylor",
+        designation: "Associate Professor",
+        qualifications: "PhD in Cybersecurity, Georgia Tech",
         departmentId: itDept.id,
         userId: facultyUsers[4].id,
         isActive: true,
@@ -354,9 +354,9 @@ async function main() {
     // PG Faculty
     prisma.faculty.create({
       data: {
-        name: 'Dr. James Anderson',
-        designation: 'Assistant Professor',
-        qualifications: 'PhD in Data Science, Harvard University',
+        name: "Dr. James Anderson",
+        designation: "Assistant Professor",
+        qualifications: "PhD in Data Science, Harvard University",
         departmentId: pgDept.id,
         userId: facultyUsers[5].id,
         isActive: true,
@@ -364,155 +364,155 @@ async function main() {
     }),
   ]);
 
-  console.log('✅ Created faculty profiles');
+  console.log("✅ Created faculty profiles");
 
   // ===============================
   // COURSES
   // ===============================
   const currentYear = new Date().getFullYear();
-  
+
   const courses = await Promise.all([
     // CS Courses
     prisma.course.create({
       data: {
-        name: 'Data Structures and Algorithms',
-        code: 'CS201',
-        slug: 'data-structures-algorithms',
+        name: "Data Structures and Algorithms",
+        code: "CS201",
+        slug: "data-structures-algorithms",
         semester: 3,
         credits: 4,
-        type: 'THEORY',
-        category: 'CORE',
+        type: "THEORY",
+        category: "CORE",
         departmentId: csDept.id,
         createdById: csHod.id,
-        description: 'Fundamental data structures and algorithm analysis',
+        description: "Fundamental data structures and algorithm analysis",
         isActive: true,
       },
     }),
     prisma.course.create({
       data: {
-        name: 'Database Management Systems',
-        code: 'CS301',
-        slug: 'database-management-systems',
+        name: "Database Management Systems",
+        code: "CS301",
+        slug: "database-management-systems",
         semester: 4,
         credits: 4,
-        type: 'BOTH',
-        category: 'CORE',
+        type: "BOTH",
+        category: "CORE",
         departmentId: csDept.id,
         createdById: csHod.id,
-        description: 'Relational database design and SQL programming',
+        description: "Relational database design and SQL programming",
         isActive: true,
       },
     }),
     prisma.course.create({
       data: {
-        name: 'Artificial Intelligence',
-        code: 'CS401',
-        slug: 'artificial-intelligence',
+        name: "Artificial Intelligence",
+        code: "CS401",
+        slug: "artificial-intelligence",
         semester: 5,
         credits: 3,
-        type: 'THEORY',
-        category: 'CORE',
+        type: "THEORY",
+        category: "CORE",
         departmentId: csDept.id,
         createdById: csHod.id,
-        description: 'Introduction to AI concepts and techniques',
+        description: "Introduction to AI concepts and techniques",
         isActive: true,
       },
     }),
     prisma.course.create({
       data: {
-        name: 'Operating Systems',
-        code: 'CS302',
-        slug: 'operating-systems',
+        name: "Operating Systems",
+        code: "CS302",
+        slug: "operating-systems",
         semester: 4,
         credits: 3,
-        type: 'BOTH',
-        category: 'CORE',
+        type: "BOTH",
+        category: "CORE",
         departmentId: csDept.id,
         createdById: csHod.id,
-        description: 'Principles of operating system design',
+        description: "Principles of operating system design",
         isActive: true,
       },
     }),
     prisma.course.create({
       data: {
-        name: 'Computer Networks',
-        code: 'CS303',
-        slug: 'computer-networks',
+        name: "Computer Networks",
+        code: "CS303",
+        slug: "computer-networks",
         semester: 4,
         credits: 3,
-        type: 'BOTH',
-        category: 'CORE',
+        type: "BOTH",
+        category: "CORE",
         departmentId: csDept.id,
         createdById: csHod.id,
-        description: 'Network protocols and architectures',
+        description: "Network protocols and architectures",
         isActive: true,
       },
     }),
     // IT Courses
     prisma.course.create({
       data: {
-        name: 'Network Security',
-        code: 'IT401',
-        slug: 'network-security',
+        name: "Network Security",
+        code: "IT401",
+        slug: "network-security",
         semester: 5,
         credits: 4,
-        type: 'THEORY',
-        category: 'CORE',
+        type: "THEORY",
+        category: "CORE",
         departmentId: itDept.id,
         createdById: itHod.id,
-        description: 'Principles of network security and cryptography',
+        description: "Principles of network security and cryptography",
         isActive: true,
       },
     }),
     prisma.course.create({
       data: {
-        name: 'Web Technologies',
-        code: 'IT301',
-        slug: 'web-technologies',
+        name: "Web Technologies",
+        code: "IT301",
+        slug: "web-technologies",
         semester: 4,
         credits: 3,
-        type: 'BOTH',
-        category: 'CORE',
+        type: "BOTH",
+        category: "CORE",
         departmentId: itDept.id,
         createdById: itHod.id,
-        description: 'Modern web development technologies',
+        description: "Modern web development technologies",
         isActive: true,
       },
     }),
     // PG Courses
     prisma.course.create({
       data: {
-        name: 'Advanced Machine Learning',
-        code: 'PG501',
-        slug: 'advanced-machine-learning',
+        name: "Advanced Machine Learning",
+        code: "PG501",
+        slug: "advanced-machine-learning",
         semester: 1,
         credits: 4,
-        type: 'BOTH',
-        category: 'CORE',
+        type: "BOTH",
+        category: "CORE",
         departmentId: pgDept.id,
         createdById: pgHod.id,
-        description: 'Advanced topics in machine learning',
+        description: "Advanced topics in machine learning",
         isActive: true,
       },
     }),
     prisma.course.create({
       data: {
-        name: 'Research Methodology',
-        code: 'PG502',
-        slug: 'research-methodology',
+        name: "Research Methodology",
+        code: "PG502",
+        slug: "research-methodology",
         semester: 1,
         credits: 3,
-        type: 'THEORY',
-        category: 'SEC',
+        type: "THEORY",
+        category: "SEC",
         departmentId: pgDept.id,
         createdById: pgHod.id,
-        description: 'Research methods in computer science',
+        description: "Research methods in computer science",
         isActive: true,
       },
     }),
   ]);
 
-  console.log('✅ Created courses');
+  console.log("✅ Created courses");
 
   // ===============================
   // CLOs (Course Learning Outcomes)
@@ -522,9 +522,9 @@ async function main() {
     const courseClos = await Promise.all([
       prisma.clo.create({
         data: {
-          code: 'CLO1',
+          code: "CLO1",
           statement: `Understand fundamental concepts of ${course.name}`,
-          bloomLevel: 'UNDERSTAND',
+          bloomLevel: "UNDERSTAND",
           courseId: course.id,
           createdById: course.createdById,
           order: 1,
@@ -534,9 +534,9 @@ async function main() {
       }),
       prisma.clo.create({
         data: {
-          code: 'CLO2',
-          statement: `Apply principles of ${course.name.split(' ')[0]} to solve problems`,
-          bloomLevel: 'APPLY',
+          code: "CLO2",
+          statement: `Apply principles of ${course.name.split(" ")[0]} to solve problems`,
+          bloomLevel: "APPLY",
           courseId: course.id,
           createdById: course.createdById,
           order: 2,
@@ -546,9 +546,9 @@ async function main() {
       }),
       prisma.clo.create({
         data: {
-          code: 'CLO3',
-          statement: `Analyze complex scenarios using ${course.name.split(' ')[0]} techniques`,
-          bloomLevel: 'ANALYZE',
+          code: "CLO3",
+          statement: `Analyze complex scenarios using ${course.name.split(" ")[0]} techniques`,
+          bloomLevel: "ANALYZE",
           courseId: course.id,
           createdById: course.createdById,
           order: 3,
@@ -560,7 +560,7 @@ async function main() {
     allClos.push(...courseClos);
   }
 
-  console.log('✅ Created CLOs');
+  console.log("✅ Created CLOs");
 
   // ===============================
   // PROGRAM OUTCOMES (POs)
@@ -569,40 +569,45 @@ async function main() {
     // POs for BSc Computer Science
     prisma.po.create({
       data: {
-        code: 'PO1',
-        statement: 'Engineering Knowledge: Apply knowledge of mathematics, science, engineering fundamentals',
+        code: "PO1",
+        statement:
+          "Engineering Knowledge: Apply knowledge of mathematics, science, engineering fundamentals",
         programId: bscCS.id,
         order: 1,
       },
     }),
     prisma.po.create({
       data: {
-        code: 'PO2',
-        statement: 'Problem Analysis: Identify, formulate, research literature, and analyze complex engineering problems',
+        code: "PO2",
+        statement:
+          "Problem Analysis: Identify, formulate, research literature, and analyze complex engineering problems",
         programId: bscCS.id,
         order: 2,
       },
     }),
     prisma.po.create({
       data: {
-        code: 'PO3',
-        statement: 'Design/Development of Solutions: Design solutions for complex engineering problems',
+        code: "PO3",
+        statement:
+          "Design/Development of Solutions: Design solutions for complex engineering problems",
         programId: bscCS.id,
         order: 3,
       },
     }),
     prisma.po.create({
       data: {
-        code: 'PO4',
-        statement: 'Investigation of Complex Problems: Use research-based knowledge to investigate complex problems',
+        code: "PO4",
+        statement:
+          "Investigation of Complex Problems: Use research-based knowledge to investigate complex problems",
         programId: bscCS.id,
         order: 4,
       },
     }),
     prisma.po.create({
       data: {
-        code: 'PO5',
-        statement: 'Modern Tool Usage: Create, select, and apply appropriate techniques and modern engineering tools',
+        code: "PO5",
+        statement:
+          "Modern Tool Usage: Create, select, and apply appropriate techniques and modern engineering tools",
         programId: bscCS.id,
         order: 5,
       },
@@ -610,16 +615,18 @@ async function main() {
     // POs for MSc Computer Science
     prisma.po.create({
       data: {
-        code: 'PO1',
-        statement: 'Advanced Engineering Knowledge: Apply advanced knowledge in computer science',
+        code: "PO1",
+        statement:
+          "Advanced Engineering Knowledge: Apply advanced knowledge in computer science",
         programId: mscCS.id,
         order: 1,
       },
     }),
     prisma.po.create({
       data: {
-        code: 'PO2',
-        statement: 'Research and Analysis: Conduct research and analyze findings',
+        code: "PO2",
+        statement:
+          "Research and Analysis: Conduct research and analyze findings",
         programId: mscCS.id,
         order: 2,
       },
@@ -632,31 +639,34 @@ async function main() {
   const psos = await Promise.all([
     prisma.pso.create({
       data: {
-        code: 'PSO1',
-        statement: 'Professional Skills: Ability to design and develop software solutions',
+        code: "PSO1",
+        statement:
+          "Professional Skills: Ability to design and develop software solutions",
         programId: bscCS.id,
         order: 1,
       },
     }),
     prisma.pso.create({
       data: {
-        code: 'PSO2',
-        statement: 'Problem-Solving Skills: Ability to apply computing knowledge to solve real-world problems',
+        code: "PSO2",
+        statement:
+          "Problem-Solving Skills: Ability to apply computing knowledge to solve real-world problems",
         programId: bscCS.id,
         order: 2,
       },
     }),
     prisma.pso.create({
       data: {
-        code: 'PSO1',
-        statement: 'Research Skills: Ability to conduct advanced research in computer science',
+        code: "PSO1",
+        statement:
+          "Research Skills: Ability to conduct advanced research in computer science",
         programId: mscCS.id,
         order: 1,
       },
     }),
   ]);
 
-  console.log('✅ Created POs and PSOs');
+  console.log("✅ Created POs and PSOs");
 
   // ===============================
   // COURSE-FACULTY ASSIGNMENTS
@@ -669,8 +679,8 @@ async function main() {
         facultyId: faculties[0].id, // Dr. Jane Doe
         semester: 3,
         year: currentYear,
-        teachingMethodology: 'Flipped Classroom',
-        assessmentMode: 'Continuous Assessment',
+        teachingMethodology: "Flipped Classroom",
+        assessmentMode: "Continuous Assessment",
       },
     }),
     prisma.courseFaculty.create({
@@ -679,8 +689,8 @@ async function main() {
         facultyId: faculties[1].id, // Prof. Robert Johnson
         semester: 4,
         year: currentYear,
-        teachingMethodology: 'Project-Based Learning',
-        assessmentMode: 'Theory + Practical Exams',
+        teachingMethodology: "Project-Based Learning",
+        assessmentMode: "Theory + Practical Exams",
       },
     }),
     prisma.courseFaculty.create({
@@ -689,8 +699,8 @@ async function main() {
         facultyId: faculties[2].id, // Dr. Sarah Williams
         semester: 5,
         year: currentYear,
-        teachingMethodology: 'Case Study Method',
-        assessmentMode: 'Research Paper + Presentation',
+        teachingMethodology: "Case Study Method",
+        assessmentMode: "Research Paper + Presentation",
       },
     }),
     // Multiple assignments for same faculty
@@ -700,8 +710,8 @@ async function main() {
         facultyId: faculties[0].id, // Dr. Jane Doe
         semester: 4,
         year: currentYear,
-        teachingMethodology: 'Lecture-Based',
-        assessmentMode: 'Mid-term + Final Exams',
+        teachingMethodology: "Lecture-Based",
+        assessmentMode: "Mid-term + Final Exams",
       },
     }),
     // IT Department Assignments
@@ -711,8 +721,8 @@ async function main() {
         facultyId: faculties[3].id, // Prof. Michael Brown
         semester: 5,
         year: currentYear,
-        teachingMethodology: 'Hands-on Workshops',
-        assessmentMode: 'Lab Assignments + Project',
+        teachingMethodology: "Hands-on Workshops",
+        assessmentMode: "Lab Assignments + Project",
       },
     }),
     prisma.courseFaculty.create({
@@ -721,8 +731,8 @@ async function main() {
         facultyId: faculties[4].id, // Dr. Susan Taylor
         semester: 4,
         year: currentYear,
-        teachingMethodology: 'Project-Based Learning',
-        assessmentMode: 'Project Development',
+        teachingMethodology: "Project-Based Learning",
+        assessmentMode: "Project Development",
       },
     }),
     // PG Department Assignments
@@ -732,13 +742,13 @@ async function main() {
         facultyId: faculties[5].id, // Dr. James Anderson
         semester: 1,
         year: currentYear,
-        teachingMethodology: 'Blended Learning',
-        assessmentMode: 'Online Quizzes + Project',
+        teachingMethodology: "Blended Learning",
+        assessmentMode: "Online Quizzes + Project",
       },
     }),
   ]);
 
-  console.log('✅ Created course-faculty assignments');
+  console.log("✅ Created course-faculty assignments");
 
   // ===============================
   // CLO-PO MAPPINGS
@@ -746,19 +756,19 @@ async function main() {
   for (const clo of allClos) {
     const course = await prisma.course.findUnique({
       where: { id: clo.courseId },
-      include: { department: true }
+      include: { department: true },
     });
-    
+
     if (course && course.department) {
       const program = await prisma.program.findUnique({
-        where: { id: course.department.programId }
+        where: { id: course.department.programId },
       });
-      
+
       if (program) {
         const programPos = await prisma.po.findMany({
-          where: { programId: program.id }
+          where: { programId: program.id },
         });
-        
+
         if (programPos.length > 0) {
           const maxMappings = Math.min(2, programPos.length);
           for (let i = 0; i < maxMappings; i++) {
@@ -775,7 +785,7 @@ async function main() {
     }
   }
 
-  console.log('✅ Created CLO-PO mappings');
+  console.log("✅ Created CLO-PO mappings");
 
   // ===============================
   // CLO-PSO MAPPINGS
@@ -783,19 +793,19 @@ async function main() {
   for (const clo of allClos) {
     const course = await prisma.course.findUnique({
       where: { id: clo.courseId },
-      include: { department: true }
+      include: { department: true },
     });
-    
+
     if (course && course.department) {
       const program = await prisma.program.findUnique({
-        where: { id: course.department.programId }
+        where: { id: course.department.programId },
       });
-      
+
       if (program) {
         const programPsos = await prisma.pso.findMany({
-          where: { programId: program.id }
+          where: { programId: program.id },
         });
-        
+
         if (programPsos.length > 0) {
           await prisma.cloPsoMapping.create({
             data: {
@@ -809,13 +819,13 @@ async function main() {
     }
   }
 
-  console.log('✅ Created CLO-PSO mappings');
+  console.log("✅ Created CLO-PSO mappings");
 
   // ===============================
   // NEW: CREATE STUDENTS
   // ===============================
-  console.log('📚 Creating students...');
-  
+  console.log("📚 Creating students...");
+
   // Create student users first
   const studentUsers = [];
   for (let i = 1; i <= 20; i++) {
@@ -824,10 +834,10 @@ async function main() {
         name: `Student ${i}`,
         email: `student${i}@college.edu`,
         password: hashedPassword,
-        role: 'STUDENT',
+        role: "STUDENT",
         isActive: true,
         // Assign department based on student number
-        departmentId: i <= 12 ? csDept.id : (i <= 16 ? itDept.id : pgDept.id),
+        departmentId: i <= 12 ? csDept.id : i <= 16 ? itDept.id : pgDept.id,
       },
     });
     studentUsers.push(user);
@@ -837,16 +847,23 @@ async function main() {
   const students = [];
   for (let i = 0; i < studentUsers.length; i++) {
     const departmentId = studentUsers[i].departmentId;
-    const programId = departmentId === csDept.id ? bscCS.id : 
-                     departmentId === itDept.id ? bscIT.id : mscCS.id;
+    const programId =
+      departmentId === csDept.id
+        ? bscCS.id
+        : departmentId === itDept.id
+          ? bscIT.id
+          : mscCS.id;
     const admissionYear = currentYear - 2; // Admitted 2 years ago
-    const currentSemester = departmentId === pgDept.id ? 1 : 
-                           (programId === bscCS.id || programId === bscIT.id) ? 
-                           Math.floor(Math.random() * 3) + 3 : 3; // Semesters 3-5 for UG
-    
+    const currentSemester =
+      departmentId === pgDept.id
+        ? 1
+        : programId === bscCS.id || programId === bscIT.id
+          ? Math.floor(Math.random() * 3) + 3
+          : 3; // Semesters 3-5 for UG
+
     const student = await prisma.student.create({
       data: {
-        rollNumber: `${programId === mscCS.id ? 'PG' : 'UG'}${String(i+1).padStart(3, '0')}`,
+        rollNumber: `${programId === mscCS.id ? "PG" : "UG"}${String(i + 1).padStart(3, "0")}`,
         admissionYear: admissionYear,
         currentSemester: currentSemester,
         departmentId: departmentId,
@@ -863,8 +880,8 @@ async function main() {
   // ===============================
   // NEW: STUDENT COURSE ENROLLMENTS
   // ===============================
-  console.log('📝 Creating student course enrollments...');
-  
+  console.log("📝 Creating student course enrollments...");
+
   const enrollments = [];
   for (const student of students) {
     // Find courses in student's department and semester
@@ -883,7 +900,7 @@ async function main() {
           courseId: course.id,
           semester: student.currentSemester,
           year: currentYear,
-          status: 'ENROLLED',
+          status: "ENROLLED",
         },
       });
       enrollments.push(enrollment);
@@ -895,8 +912,8 @@ async function main() {
   // ===============================
   // SUMMARY
   // ===============================
-  console.log('\n📊 Database Seeding Summary:');
-  console.log('===========================');
+  console.log("\n📊 Database Seeding Summary:");
+  console.log("===========================");
   console.log(`✅ Programs: ${await prisma.program.count()}`);
   console.log(`✅ Departments: ${await prisma.department.count()}`);
   console.log(`✅ Users: ${await prisma.user.count()}`);
@@ -905,40 +922,46 @@ async function main() {
   console.log(`✅ CLOs: ${await prisma.clo.count()}`);
   console.log(`✅ POs: ${await prisma.po.count()}`);
   console.log(`✅ PSOs: ${await prisma.pso.count()}`);
-  console.log(`✅ Course-Faculty Assignments: ${await prisma.courseFaculty.count()}`);
+  console.log(
+    `✅ Course-Faculty Assignments: ${await prisma.courseFaculty.count()}`,
+  );
   console.log(`✅ CLO-PO Mappings: ${await prisma.cloPoMapping.count()}`);
   console.log(`✅ CLO-PSO Mappings: ${await prisma.cloPsoMapping.count()}`);
   console.log(`✅ Students: ${await prisma.student.count()}`);
-  console.log(`✅ Student Course Enrollments: ${await prisma.studentCourseEnrollment.count()}`);
+  console.log(
+    `✅ Student Course Enrollments: ${await prisma.studentCourseEnrollment.count()}`,
+  );
   console.log(`✅ Assessments: ${await prisma.assessment.count()}`);
-  console.log(`✅ Assessment-CLO Mappings: ${await prisma.assessmentClo.count()}`);
+  console.log(
+    `✅ Assessment-CLO Mappings: ${await prisma.assessmentClo.count()}`,
+  );
   console.log(`✅ Marks: ${await prisma.mark.count()}`);
-  
-  console.log('\n🎉 Seeding completed successfully!');
-  console.log('\n🔑 Test Credentials:');
-  console.log('=====================');
-  console.log('Admin: admin@college.edu / password123');
-  console.log('CS HOD: hod.cs@college.edu / password123');
-  console.log('IT HOD: hod.it@college.edu / password123');
-  console.log('PG HOD: hod.pg@college.edu / password123');
-  console.log('Faculty: jane.doe@college.edu / password123');
-  console.log('Student: student1@college.edu / password123');
-  
-  console.log('\n📚 Sample Data Created:');
-  console.log('=======================');
-  console.log('- 20 students across all departments');
-  console.log('- Multiple assessments per course');
-  console.log('- Student enrollments in courses');
-  console.log('- Marks for assessments across all CLOs');
-  
-  console.log('\n💡 All users have password: password123');
+
+  console.log("\n🎉 Seeding completed successfully!");
+  console.log("\n🔑 Test Credentials:");
+  console.log("=====================");
+  console.log("Admin: admin@college.edu / password123");
+  console.log("CS HOD: hod.cs@college.edu / password123");
+  console.log("IT HOD: hod.it@college.edu / password123");
+  console.log("PG HOD: hod.pg@college.edu / password123");
+  console.log("Faculty: jane.doe@college.edu / password123");
+  console.log("Student: student1@college.edu / password123");
+
+  console.log("\n📚 Sample Data Created:");
+  console.log("=======================");
+  console.log("- 20 students across all departments");
+  console.log("- Multiple assessments per course");
+  console.log("- Student enrollments in courses");
+  console.log("- Marks for assessments across all CLOs");
+
+  console.log("\n💡 All users have password: password123");
 }
 
 main()
   .catch((error) => {
-    console.error('❌ Seeding failed:', error);
-    console.error('Error details:', error.message);
-    console.error('Stack trace:', error.stack);
+    console.error("❌ Seeding failed:", error);
+    console.error("Error details:", error.message);
+    console.error("Stack trace:", error.stack);
     process.exit(1);
   })
   .finally(async () => {
