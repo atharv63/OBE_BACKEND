@@ -3,6 +3,7 @@ const express = require("express");
 const {
   getDashboardStats,
   getAllCourses,
+  getCoursesByAcademicPeriod,
   createCourse,
   updateCourse,
   deleteCourse,
@@ -24,7 +25,13 @@ const {
   getFacultyWorkload,
   getAllDepartmentAssignments,
   getAssignmentsStats,
+  getCourseAttainment,
 } = require("../controllers/hodController");
+
+const {
+  getCourseContributionDetails,
+  getCourseAttainmentReport,
+} = require("../controllers/reportController");
 
 const { authenticate } = require("../middleware/auth");
 
@@ -36,6 +43,11 @@ router.get("/dashboard/stats", authenticate, getDashboardStats);
 
 //Get all courses
 router.get("/all-courses", authenticate, getAllCourses);
+
+// Get courses by academic period (year and semester) with query params
+router.get("/courses", authenticate, getCoursesByAcademicPeriod);
+// Get courses by academic period with path params
+router.get("/courses", authenticate, getCoursesByAcademicPeriod);
 
 //Get course by ID
 router.get("/course/:courseId", authenticate, getCourseById);
@@ -80,7 +92,7 @@ router.get("/faculties", authenticate, getDepartmentFaculties);
 router.get(
   "/courses/:courseId/available-faculties",
   authenticate,
-  getAvailableFacultiesForCourse
+  getAvailableFacultiesForCourse,
 );
 
 // Get course assignments
@@ -88,7 +100,7 @@ console.log("Registering route for getting course assignments");
 router.get(
   "/courses/:courseId/assignments",
   authenticate,
-  getCourseAssignments
+  getCourseAssignments,
 );
 
 // Assign faculty to course
@@ -98,20 +110,38 @@ router.post("/courses/:courseId/assign", authenticate, assignFacultyToCourse);
 router.put(
   "/courses/:courseId/assignments/:facultyId/:semester/:year",
   authenticate,
-  updateAssignment
+  updateAssignment,
 );
 
 // Remove assignment
 router.delete(
   "/courses/:courseId/assignments/:facultyId/:semester/:year",
   authenticate,
-  removeFacultyAssignment
+  removeFacultyAssignment,
 );
 
 // Get faculty workload
 router.get("/faculties/:facultyId/workload", authenticate, getFacultyWorkload);
+
+// HOD reports (from performance_reports submitted by faculty)
+router.get(
+  "/reports/course/:courseId/contributions",
+  authenticate,
+  getCourseContributionDetails,
+);
+router.get(
+  "/reports/course/:courseId/attainment",
+  authenticate,
+  getCourseAttainmentReport,
+);
+
 // router.get("/courses/:courseId", authenticate, getCourseById);
 router.get("/assignments", authenticate, getAllDepartmentAssignments);
 router.get("/assignments/stats", authenticate, getAssignmentsStats);
 
+router.get(
+  "/course/:courseId/attainment/:year/:semester",
+  authenticate,
+  getCourseAttainment,
+);
 module.exports = router;

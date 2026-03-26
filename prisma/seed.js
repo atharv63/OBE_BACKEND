@@ -9,22 +9,22 @@ async function clearDatabase() {
   console.log("🧹 Clearing existing data...");
 
   // Updated deletion order including new models
-  // await prisma.cloPsoMapping.deleteMany();
-  // await prisma.cloPoMapping.deleteMany();
-  // await prisma.mark.deleteMany();
-  // await prisma.assessmentClo.deleteMany();
-  // await prisma.assessment.deleteMany();
-  // await prisma.studentCourseEnrollment.deleteMany();
-  // await prisma.student.deleteMany();
-  // await prisma.clo.deleteMany();
-  // await prisma.courseFaculty.deleteMany();
-  // await prisma.course.deleteMany();
-  // await prisma.pso.deleteMany();
-  // await prisma.po.deleteMany();
-  // await prisma.faculty.deleteMany();
-  // await prisma.user.deleteMany();
-  // await prisma.department.deleteMany();
-  // await prisma.program.deleteMany();
+  await prisma.cloPsoMapping.deleteMany();
+  await prisma.cloPoMapping.deleteMany();
+  await prisma.mark.deleteMany();
+  await prisma.assessmentClo.deleteMany();
+  await prisma.assessment.deleteMany();
+  await prisma.studentCourseEnrollment.deleteMany();
+  await prisma.student.deleteMany();
+  await prisma.clo.deleteMany();
+  await prisma.courseFaculty.deleteMany();
+  await prisma.course.deleteMany();
+  await prisma.pso.deleteMany();
+  await prisma.po.deleteMany();
+  await prisma.faculty.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.department.deleteMany();
+  await prisma.program.deleteMany();
 
   console.log("✅ Database cleared");
 }

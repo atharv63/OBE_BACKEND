@@ -151,7 +151,7 @@ module.exports.getPrograms = async (req, res) => {
 
     // 2️⃣ Extract unique programs
     const programs = Array.from(
-      new Map(departments.map((d) => [d.program.id, d.program])).values()
+      new Map(departments.map((d) => [d.program.id, d.program])).values(),
     );
 
     return res.json(programs);
@@ -587,11 +587,11 @@ module.exports.mapClosToPosPsos = async (req, res) => {
 
     // 1️⃣ sanitize inputs
     poMappings = poMappings.filter(
-      (m) => m?.cloId && m?.poId && m?.level >= 0 && m?.level <= 3
+      (m) => m?.cloId && m?.poId && m?.level >= 0 && m?.level <= 3,
     );
 
     psoMappings = psoMappings.filter(
-      (m) => m?.cloId && m?.psoId && m?.level >= 0 && m?.level <= 3
+      (m) => m?.cloId && m?.psoId && m?.level >= 0 && m?.level <= 3,
     );
 
     // 2️⃣ collect ALL CLO ids involved
@@ -599,7 +599,7 @@ module.exports.mapClosToPosPsos = async (req, res) => {
       new Set([
         ...poMappings.map((m) => m.cloId),
         ...psoMappings.map((m) => m.cloId),
-      ])
+      ]),
     );
 
     // 3️⃣ if nothing to save, stop
@@ -780,7 +780,7 @@ module.exports.getAvailableFacultiesForCourse = async (req, res) => {
 
       // Filter out already assigned faculties
       const availableFaculties = allFaculties.filter(
-        (faculty) => !assignedFacultyIds.includes(faculty.id)
+        (faculty) => !assignedFacultyIds.includes(faculty.id),
       );
 
       return res.json({
@@ -1654,7 +1654,7 @@ module.exports.getAssignmentsStats = async (req, res) => {
           designation: faculty?.designation,
           assignmentCount: item._count,
         };
-      })
+      }),
     );
 
     // Courses with most faculties assigned
@@ -1689,7 +1689,7 @@ module.exports.getAssignmentsStats = async (req, res) => {
           semester: course?.semester,
           facultyCount: item._count,
         };
-      })
+      }),
     );
 
     res.json({
@@ -1708,5 +1708,132 @@ module.exports.getAssignmentsStats = async (req, res) => {
   } catch (error) {
     console.error("getAssignmentsStats error:", error);
     res.status(500).json({ error: error.message });
+  }
+};
+
+// GET COURSES BY YEAR + SEMESTER
+module.exports.getCoursesByAcademicPeriod = async (req, res) => {
+  try {
+    const { year, semester } = req.query;
+    const departmentId = req.user.departmentId;
+
+    if (!year || !semester) {
+      return res.status(400).json({
+        success: false,
+        message: "year and semester are required",
+      });
+    }
+
+    if (!departmentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Department not found for user",
+      });
+    }
+
+    // Get courses that have faculty assignments in the specified year and semester
+    // for the HOD's department
+    const courses = await prisma.course.findMany({
+      where: {
+        departmentId: departmentId,
+        isActive: true,
+        facultyAssignments: {
+          some: {
+            year: Number(year),
+            semester: Number(semester),
+          },
+        },
+      },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        semester: true,
+        credits: true,
+        type: true,
+        category: true,
+        facultyAssignments: {
+          where: {
+            year: Number(year),
+            semester: Number(semester),
+          },
+          include: {
+            faculty: {
+              select: {
+                id: true,
+                name: true,
+                designation: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        code: "asc",
+      },
+    });
+
+    return res.json({
+      success: true,
+      data: courses,
+    });
+  } catch (error) {
+    console.error("getCoursesByAcademicPeriod error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+module.exports.getCourseAttainment = async (req, res) => {
+  try {
+    console.log("🎯 getCourseAttainment FUNCTION START");
+
+    const { courseId, year } = req.params;
+
+    console.log("🎯 getCourseAttainment called with:", {
+      courseId,
+      year,
+    });
+
+    if (!courseId || !year) {
+      return res.status(400).json({
+        success: false,
+        message: "courseId and year are required",
+      });
+    }
+
+    const academicYear = `${year}-${String(Number(year) + 1).slice(-2)}`;
+
+    const report = await prisma.performanceReport.findFirst({
+      // ✅ FIXED
+      where: {
+        courseId: courseId,
+        academicYear: academicYear,
+        reportType: "COMBINED",
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: "Report not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: report.reportParameters, // ✅ also FIXED (camelCase)
+    });
+  } catch (error) {
+    console.error("getCourseAttainment error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
